@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Netherlands BESS Opportunity Map | Station-Level Congestion Analysis 2025</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Arial,sans-serif; background:#0b1520; color:#dce8f4; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+#header {
+  background:linear-gradient(135deg,#0a1e30 0%,#122d48 100%);
+  padding:11px 20px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom:2px solid #1a5a8a;
+  flex-shrink:0;
+}
+#header h1 { font-size:16px; font-weight:700; color:#fff; }
+#header .sub { font-size:10px; color:#6aabcf; margin-top:2px; }
+.badge { background:#d44a30; color:#fff; font-size:9px; font-weight:800; padding:3px 10px; border-radius:10px; letter-spacing:0.6px; white-space:nowrap; }
+
+#main { display:flex; flex:1; overflow:hidden; }
+#map { flex:1; }
+
+/* ─── SIDEBAR ─── */
+#sidebar {
+  width:320px; background:#0a1824;
+  display:flex; flex-direction:column;
+  border-left:1px solid #14304a;
+  flex-shrink:0; overflow:hidden;
+}
+
+.sb-section { padding:12px 15px; border-bottom:1px solid #14304a; flex-shrink:0; }
+.sb-section h3 { font-size:9px; font-weight:800; letter-spacing:1.3px; text-transform:uppercase; color:#4a9fd4; margin-bottom:8px; }
+
+/* Toggle */
+.tog { display:flex; align-items:center; gap:8px; margin-bottom:5px; cursor:pointer; }
+.tog input { display:none; }
+.tslider { width:28px; height:14px; border-radius:7px; background:#1a3550; position:relative; transition:.2s; flex-shrink:0; }
+.tslider::after { content:''; width:10px; height:10px; border-radius:50%; background:#2a5575; position:absolute; top:2px; left:2px; transition:.2s; }
+.tog input:checked+.tslider { background:#1a6fa8; }
+.tog input:checked+.tslider::after { left:16px; background:#fff; }
+.tlabel { font-size:11px; color:#8ab4cc; }
+
+/* Ranking list */
+#ranking-list { flex:1; overflow-y:auto; padding:0; }
+#ranking-list::-webkit-scrollbar { width:3px; }
+#ranking-list::-webkit-scrollbar-thumb { background:#1a3550; }
+
+.rank-item {
+  display:flex; align-items:center; gap:0;
+  padding:7px 15px; border-bottom:1px solid #0f2338;
+  cursor:pointer; transition:background .15s;
+}
+.rank-item:hover { background:#0f2438; }
+.rank-item.active { background:#112a3a; border-left:3px solid #4ab8ff; }
+.rank-num { font-size:10px; font-weight:800; color:#2a5a7a; width:20px; flex-shrink:0; }
+.rank-bar-wrap { flex:1; min-width:0; }
+.rank-name { font-size:11px; font-weight:700; color:#cce4f8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
+.rank-meta { font-size:9px; color:#4a7a9a; }
+.rank-bar-bg { height:4px; background:#0d2233; border-radius:2px; margin-top:3px; }
+.rank-bar-fill { height:4px; border-radius:2px; }
+.rank-score { font-size:13px; font-weight:800; width:32px; text-align:right; flex-shrink:0; }
+
+/* Detail panel */
+#detail-panel {
+  flex-shrink:0; background:#091520;
+  border-top:1px solid #14304a;
+  overflow-y:auto; max-height:44%;
+  padding:12px 15px;
+}
+#detail-panel::-webkit-scrollbar { width:3px; }
+#detail-panel::-webkit-scrollbar-thumb { background:#1a3550; }
+.dp-title { font-size:14px; font-weight:800; color:#fff; margin-bottom:2px; }
+.dp-kv { font-size:10px; color:#4a9fd4; margin-bottom:10px; }
+.dp-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #0f2336; font-size:11px; }
+.dp-row .lbl { color:#5a8aaa; }
+.dp-row .val { color:#c8e0f8; font-weight:600; font-size:12px; }
+.dp-bar { margin:6px 0 2px; }
+.dp-bar-lbl { font-size:9px; color:#4a7a9a; text-transform:uppercase; letter-spacing:.7px; margin-bottom:2px; }
+.dp-bar-bg { background:#0a1e30; height:7px; border-radius:3px; }
+.dp-bar-fill { height:7px; border-radius:3px; }
+.dp-notes { margin-top:9px; font-size:10px; color:#6a9ab8; line-height:1.65; background:#070f18; padding:9px; border-radius:5px; border-left:3px solid #1a5a8a; }
+.dp-placeholder { font-size:11px; color:#2a5a7a; line-height:1.75; }
+.sbadge { display:inline-block; padding:1px 7px; border-radius:8px; font-size:9px; font-weight:800; letter-spacing:.3px; margin-bottom:8px; }
+.s-crit { background:#5a1414; color:#ff8080; }
+.s-high { background:#4a2a00; color:#ffaa40; }
+.s-mh   { background:#2a3a00; color:#c0e040; }
+.s-med  { background:#003a28; color:#50e0a0; }
+
+/* Stats bar */
+#stats { background:#06111a; padding:6px 20px; display:flex; gap:28px; border-top:1px solid #10283c; flex-shrink:0; }
+.stat { text-align:center; }
+.sval { font-size:14px; font-weight:800; color:#4ab8ff; }
+.slbl { font-size:8px; color:#2a5a7a; letter-spacing:.8px; text-transform:uppercase; }
+
+/* Legend */
+.leg-row { display:flex; align-items:center; gap:7px; margin-bottom:5px; font-size:10px; color:#7aaccc; }
+.leg-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+.leg-ring { width:14px; height:14px; border-radius:50%; border:2px solid; flex-shrink:0; background:transparent; }
+
+/* Leaflet overrides */
+.leaflet-container { background:#0b1520; }
+.leaflet-control-zoom { border:1px solid #14304a !important; }
+.leaflet-control-zoom a { background:#0a1824 !important; color:#4ab8ff !important; border-color:#14304a !important; }
+.leaflet-control-zoom a:hover { background:#112a3a !important; }
+.leaflet-popup-content-wrapper { background:#091a2a; border:1px solid #1a5a8a; color:#cce4f8; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,.6); }
+.leaflet-popup-tip { background:#091a2a; }
+.leaflet-popup-close-button { color:#4ab8ff !important; }
+.leaflet-tooltip { background:transparent !important; border:none !important; box-shadow:none !important; padding:0 !important; }
+.ctt { background:#091a2a; border:1px solid #1a5a8a; border-radius:6px; padding:7px 11px; font-size:11px; color:#cce4f8; min-width:140px; box-shadow:0 3px 12px rgba(0,0,0,.5); }
+.ctt strong { color:#fff; font-size:12px; display:block; margin-bottom:2px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>🇳🇱 Netherlands — BESS Station-Level Congestion Map</h1>
+    <div class="sub">Per-station congestion scoring · TenneT 380 kV &amp; 150 kV · Waiting lists · Flexibility demand · Sources: TenneT, Stedin, Enexis, Liander 2024–2025</div>
+  </div>
+  <div class="badge">BESS DEVELOPER TOOL</div>
+</div>
+
+<div id="main">
+  <div id="map"></div>
+  <div id="sidebar">
+
+    <div class="sb-section">
+      <h3>Layers</h3>
+      <label class="tog"><input type="checkbox" id="tog-prov" checked><span class="tslider"></span><span class="tlabel">Province congestion (background)</span></label>
+      <label class="tog"><input type="checkbox" id="tog-ring" checked><span class="tslider"></span><span class="tlabel">Station congestion rings</span></label>
+      <label class="tog"><input type="checkbox" id="tog-dot" checked><span class="tslider"></span><span class="tlabel">Station markers (380/150 kV)</span></label>
+    </div>
+
+    <div class="sb-section">
+      <h3>Legend — Station Score</h3>
+      <div class="leg-row"><div class="leg-dot" style="background:#c0392b;opacity:.85"></div>Critical (8–10) — grid full, closed to new requests</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#e67e22;opacity:.85"></div>High (6–7) — major overload, long waiting list</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#d4ac0d;opacity:.85"></div>Medium-High (4–5) — congestion growing</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#27ae60;opacity:.85"></div>Medium (2–3) — managed / improving</div>
+      <div style="border-top:1px solid #14304a;margin:7px 0 7px"></div>
+      <div class="leg-row"><div class="leg-ring" style="border-color:#4ab8ff"></div>380 kV TenneT substation</div>
+      <div class="leg-row"><div class="leg-ring" style="border-color:#3a7a9a"></div>150 kV TenneT substation</div>
+      <div style="font-size:9px;color:#2a5a7a;margin-top:4px">Ring size = flexibility demand (MW). Click any station for full analysis.</div>
+    </div>
+
+    <div class="sb-section" style="padding-bottom:5px">
+      <h3>Stations ranked by congestion + BESS score ↓</h3>
+    </div>
+    <div id="ranking-list"></div>
+
+    <div id="detail-panel">
+      <div class="dp-placeholder">
+        ← Click a station on the map or in the ranking list to see its full congestion analysis, waiting list data, and BESS opportunity score.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="stats">
+  <div class="stat"><div class="sval" id="stat-total">36</div><div class="slbl">Stations scored</div></div>
+  <div class="stat"><div class="sval" id="stat-tennet">—</div><div class="slbl">TenneT 380kV stations</div></div>
+  <div class="stat"><div class="sval" id="stat-dso">—</div><div class="slbl">DSO 150kV stations</div></div>
+  <div class="stat"><div class="sval">2,068 MW</div><div class="slbl">Rotterdam waiting list</div></div>
+  <div class="stat"><div class="sval">2,250 MW</div><div class="slbl">Dodewaard waiting list</div></div>
+  <div class="stat"><div class="sval">2033–36</div><div class="slbl">Earliest relief NE Brabant</div></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATION DATA  — congestion_score 1–10, bess_score 1–10
+// Sources: TenneT congestion research reports, Stedin, Enexis,
+//          Liander capacity updates 2024–2025
+// ═══════════════════════════════════════════════════════════════
+const STATIONS = [
+
+  // ─── ROTTERDAM / ZUID-HOLLAND ──────────────────────────────
+  {
+    id:'maasvlakte', name:'Maasvlakte', kv:380, lat:51.956, lng:4.016,
+    province:'Zuid-Holland',
+    congestion_score:10, bess_score:10,
+    waiting_list_mw:2068, overload_mw:244, relief_year:2030,
+    flex_demand_mw:600,
+    status:'CRITICAL',
+    source:'TenneT congestieonderzoek Haven Rotterdam Oct 2025',
+    notes:'Highest congestion in NL. Waiting list grew 5× from 426 MW (2023) to 2,068 MW (2025). Overload forecast: 31 MW in 2026 → 244 MW in 2029. Port electrification + H2 electrolysis adding massive new load. No new requests accepted. TenneT/Stedin formally calling for flexible power. Top BESS application target.'
+  },
+  {
+    id:'krimpen', name:'Krimpen a/d IJssel', kv:380, lat:51.921, lng:4.617,
+    province:'Zuid-Holland',
+    congestion_score:9, bess_score:9,
+    waiting_list_mw:800, overload_mw:120, relief_year:2028,
+    flex_demand_mw:400,
+    status:'CRITICAL',
+    source:'TenneT Zuid-Holland research Dec 2024 + Stedin update',
+    notes:'New transformers being added to relieve Krimpen, Capelle a/d IJssel, Krimpenerwaard, Zuidplas and parts of Ridderkerk. Until transformers commissioned (~2028) no new large consumers accepted. Entire Zuid-Holland declared congested Dec 2024. Strong BESS case to bridge capacity gap.'
+  },
+  {
+    id:'europoort', name:'Europoort (planned 380kV)', kv:380, lat:51.942, lng:4.047,
+    province:'Zuid-Holland',
+    congestion_score:9, bess_score:9,
+    waiting_list_mw:1200, overload_mw:180, relief_year:2032,
+    flex_demand_mw:500,
+    status:'CRITICAL',
+    source:'TenneT Rotterdam congestion study + port electrification plans',
+    notes:'New 380kV substation at Europoort planned to serve H2/electrolysis projects at Port of Rotterdam. Until then, the area feeds through Maasvlakte — already at breaking point. BESS co-located here would earn congestion management payments from TenneT and offer peak-shaving to port customers. Waiting list joining Maasvlakte overload.'
+  },
+
+  // ─── AMSTERDAM / NOORD-HOLLAND ─────────────────────────────
+  {
+    id:'diemen', name:'Diemen', kv:380, lat:52.348, lng:4.979,
+    province:'Noord-Holland',
+    congestion_score:9, bess_score:9,
+    waiting_list_mw:700, overload_mw:150, relief_year:2029,
+    flex_demand_mw:450,
+    status:'CRITICAL',
+    source:'TenneT No extra space North-Holland announcement + Liander 2024',
+    notes:'One of four TenneT sub-networks feeding Amsterdam (alongside Oostzaan, Vijfhuizen, NHN). Serves Amsterdam East, Southeast. New A9-Zuid 380kV substation planned in Haarlemmermeer to relieve Diemen/Vijfhuizen area — final location decision expected early 2026, relief earliest 2029. No extra space in large part of Noord-Holland for next decade.'
+  },
+  {
+    id:'vijfhuizen', name:'Vijfhuizen (new 380kV)', kv:380, lat:52.341, lng:4.700,
+    province:'Noord-Holland',
+    congestion_score:9, bess_score:8,
+    waiting_list_mw:550, overload_mw:130, relief_year:2029,
+    flex_demand_mw:350,
+    status:'CRITICAL',
+    source:'TenneT Noord-Holland congestion research + Liander 2024–2025',
+    notes:'Overload forecast from winter 2026–27 if no action taken. Serves SW Amsterdam including Zuidas financial district. New A9-Zuid substation (Haarlemmermeer) is the structural solution. BESS at or near this node could defer congestion and earn TenneT flexibility fees. Site selection ongoing, congestion management tender likely.'
+  },
+  {
+    id:'beverwijk', name:'Beverwijk', kv:380, lat:52.493, lng:4.655,
+    province:'Noord-Holland',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:400, overload_mw:100, relief_year:2027,
+    flex_demand_mw:300,
+    status:'CRITICAL',
+    source:'TenneT Sep 2024 feed-in congestion announcement',
+    notes:'North of North Sea Canal reached max feed-in capacity Sep 2024. New Beverwijk 380kV station + Velsen–Beverwijk–Oterleek 380kV connection due 2027. After commissioning: 600+ MW available for new requests. BESS bridge opportunity 2025–2027: earn congestion management fees during infrastructure gap. Tata Steel + IJmuiden Ver offshore wind landing.'
+  },
+  {
+    id:'oostzaan', name:'Oostzaan', kv:150, lat:52.426, lng:4.883,
+    province:'Noord-Holland',
+    congestion_score:7, bess_score:7,
+    waiting_list_mw:320, overload_mw:70, relief_year:2027,
+    flex_demand_mw:200,
+    status:'HIGH',
+    source:'Liander capaciteitsupdate 2025 + TenneT Noord-Holland research',
+    notes:'Serves Amsterdam Noord, Oost, Centrum, West, Port Area. Waiting list partially cleared (earlier than expected). Remaining capacity partly available now, but structurally constrained until 2027 expansions. BESS at Oostzaan provides congestion relief and Amsterdam port arbitrage value.'
+  },
+  {
+    id:'middenmeer', name:'Middenmeer (planned 380kV)', kv:380, lat:52.800, lng:4.991,
+    province:'Noord-Holland',
+    congestion_score:7, bess_score:8,
+    waiting_list_mw:280, overload_mw:80, relief_year:2028,
+    flex_demand_mw:250,
+    status:'HIGH',
+    source:'TenneT 380kV NHN expansion plan',
+    notes:'New 380kV station planned north of North Sea Canal as part of Noord-Holland Noord expansion. Connects to Middenmeer wind zone + future offshore wind landing. TenneT planning 2 new 380kV stations in NHN — one south of (Beverwijk–Diemen line, ~17 ha) and one north (~24 ha, near Middenmeer). Strong pre-development opportunity for BESS.'
+  },
+
+  // ─── GRONINGEN ─────────────────────────────────────────────
+  {
+    id:'eemshaven', name:'Eemshaven', kv:380, lat:53.433, lng:6.837,
+    province:'Groningen',
+    congestion_score:9, bess_score:10,
+    waiting_list_mw:1100, overload_mw:200, relief_year:2032,
+    flex_demand_mw:700,
+    status:'CRITICAL',
+    source:'TenneT Groningen congestion research Dec 2025 + Enexis',
+    notes:'NL\'s primary offshore wind landfall hub: Hollandse Kust Noord/West, Gemini, SDE++ parks. 136 MW feed-in room at Eemshaven-Midden as of Dec 2025 recalibration — but for offtake the grid is critically overloaded. Data centre boom (Google, Microsoft). TenneT investing ~€500M in Eemshaven expansion through 2035. GIGA Leopard precedent nearby confirms BESS model works. Long congestion until 2032–2034 = long revenue tail for BESS.'
+  },
+  {
+    id:'delfzijl', name:'Delfzijl / Weiwerd', kv:380, lat:53.315, lng:6.900,
+    province:'Groningen',
+    congestion_score:9, bess_score:10,
+    waiting_list_mw:800, overload_mw:170, relief_year:2032,
+    flex_demand_mw:600,
+    status:'CRITICAL',
+    source:'TenneT + GIGA Storage GIGA Leopard 300MW project 2024',
+    notes:'GIGA Leopard 300 MW BESS (GIGA Storage/TenneT) — NL\'s first time-bound direct HV connection contract. Financing secured Jun 2025, operational ~2027. Proves the business model: BESS on TenneT grid earns congestion management income. Industrial cluster (Nouryon, Dow). H2 transition. Congestion until 2032–34. Second BESS project here highly viable given demonstrated precedent.'
+  },
+  {
+    id:'meeden', name:'Meeden', kv:380, lat:53.091, lng:6.927,
+    province:'Groningen',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:400, overload_mw:100, relief_year:2032,
+    flex_demand_mw:350,
+    status:'CRITICAL',
+    source:'TenneT Groningen deelnet congestion research 2025',
+    notes:'Central Groningen feed-in congestion zone. Partijen on waiting list for Musselkanaal/Groningen-Oost deelnet must wait until 2032+ for HV expansion. Large solar/wind pipeline feeding into this node. BESS opportunity for feed-in congestion relief + DSO flexibility tenders (Enexis flexibility tenders planned 2026).'
+  },
+  {
+    id:'weiwerd', name:'Weiwerd', kv:380, lat:53.303, lng:6.838,
+    province:'Groningen',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:350, overload_mw:90, relief_year:2032,
+    flex_demand_mw:300,
+    status:'CRITICAL',
+    source:'TenneT Groningen congestion + industrial cluster plans',
+    notes:'Industrial cluster hub (Nouryon, Dow Chemical). H2 electrolyser + e-boiler projects creating new demand/generation patterns. TenneT reinforcing Groningen sub-networks. Feed-in congestion alongside demand pressure. Multi-direction BESS value: arbitrage, congestion management, frequency regulation via TenneT.'
+  },
+
+  // ─── GELDERLAND / FLEVOLAND ────────────────────────────────
+  {
+    id:'dodewaard', name:'Dodewaard', kv:380, lat:51.893, lng:5.653,
+    province:'Gelderland',
+    congestion_score:9, bess_score:9,
+    waiting_list_mw:2250, overload_mw:250, relief_year:2033,
+    flex_demand_mw:600,
+    status:'CRITICAL',
+    source:'TenneT — all 150kV stations GLD/FLV congested; 5,600 MW contracted vs 3,350 MW available',
+    notes:'ONE of three stations (Dodewaard/Doetinchem/Lelystad) where total contracted capacity = 5,600 MW vs only 3,350 MW available. All 150kV stations in Gelderland AND Flevoland declared congested. Extra transformer needed; delivery delayed to 2029–2033 (possibly 2035). BESS at Dodewaard is a prime application — long revenue window to 2033+, direct 380kV connection possible.'
+  },
+  {
+    id:'doetinchem', name:'Doetinchem', kv:380, lat:51.967, lng:6.295,
+    province:'Gelderland',
+    congestion_score:9, bess_score:8,
+    waiting_list_mw:900, overload_mw:160, relief_year:2033,
+    flex_demand_mw:400,
+    status:'CRITICAL',
+    source:'TenneT Gelderland congestion research + Dodewaard-Doetinchem 380kV upgrade',
+    notes:'Part of the Gelderland overload triangle (Dodewaard–Doetinchem–Lelystad). 5,600 MW contracted vs 3,350 MW available across this cluster. Extra transformer delivery delayed to 2029–2033. 380kV Dodewaard–Doetinchem upgrade project ongoing. BESS viable for congestion management income + energy arbitrage until structural relief arrives.'
+  },
+  {
+    id:'arnhem', name:'Arnhem', kv:380, lat:51.985, lng:5.909,
+    province:'Gelderland',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:600, overload_mw:110, relief_year:2031,
+    flex_demand_mw:300,
+    status:'CRITICAL',
+    source:'TenneT Gelderland + Liander congestion updates 2024–2025',
+    notes:'Gelderland\'s main 380kV transmission hub. TenneT HQ is here. Vitens water, Rijnstate hospital, heavy industry. All surrounding 150kV stations congested. Liander managing large waiting list. BESS on 380kV Arnhem node would have direct TenneT contract opportunity and serve as regional flexibility anchor.'
+  },
+  {
+    id:'lelystad', name:'Lelystad', kv:380, lat:52.520, lng:5.465,
+    province:'Flevoland',
+    congestion_score:9, bess_score:9,
+    waiting_list_mw:700, overload_mw:130, relief_year:2031,
+    flex_demand_mw:420,
+    status:'CRITICAL',
+    source:'TenneT Lelystad 380kV expansion project; Lelystad one of 3 stations in 5,600MW vs 3,350MW cluster (TenneT 2024)',
+    notes:'One of the three named key congested stations in the Gelderland/Flevoland/Utrecht cluster (Lelystad, Dodewaard, Doetinchem) where total contracted capacity = 5,600 MW vs only 3,350 MW available. Expansion project ongoing at Larserringweg site (between IJsselmeer dike and A6). TenneT expanding to future-proof the Flevopolder sub-network. Expansion delayed: structural relief not before 2031. BESS here has a long, confirmed revenue window for congestion management.'
+  },
+  {
+    id:'ens', name:'Ens (Noordoostpolder)', kv:380, lat:52.638, lng:5.668,
+    province:'Flevoland',
+    congestion_score:7, bess_score:8,
+    waiting_list_mw:420, overload_mw:80, relief_year:2029,
+    flex_demand_mw:320,
+    status:'HIGH',
+    source:'TenneT Vierverlaten–Ens 380kV project NRD Jan 2024; 880 MW limitation contracts identified',
+    notes:'380kV hub for the Noordoostpolder — one of NL\'s largest wind/solar generation zones. 880 MW of feed-in identified via Enexis limitation contracts in this area. Subject of the new Vierverlaten–Ens 380kV connection investigation (NRD Jan 2024) to transport northern generation south. Until the new connection is realised (~2029), feed-in congestion peaks during high-generation periods. BESS earns congestion management income and curtailment-avoidance fees.'
+  },
+  {
+    id:'almere_zeewolde', name:'Almere / Zeewolde (new 380kV)', kv:380, lat:52.342, lng:5.338,
+    province:'Flevoland',
+    congestion_score:7, bess_score:7,
+    waiting_list_mw:300, overload_mw:70, relief_year:2030,
+    flex_demand_mw:260,
+    status:'HIGH',
+    source:'TenneT Diemen–Lelystad–Ens 380kV project; six location alternatives under investigation 2024',
+    notes:'New 380kV station planned as part of the Diemen–Lelystad–Ens connection project. Six location alternatives in the Almere/Zeewolde area are being investigated by TenneT and the Ministry of Climate & Green Growth. Almere is one of NL\'s fastest-growing cities. Decision on preferred alternative expected summer 2026; project decision 2028. Pre-development BESS opportunity: co-locate with the new station to lock in grid access before the node is congested at commissioning.'
+  },
+
+  // ─── NOORD-BRABANT ─────────────────────────────────────────
+  {
+    id:'eindhoven', name:'Eindhoven', kv:380, lat:51.440, lng:5.470,
+    province:'Noord-Brabant',
+    congestion_score:9, bess_score:9,
+    waiting_list_mw:1400, overload_mw:220, relief_year:2027,
+    flex_demand_mw:500,
+    status:'CRITICAL',
+    source:'TenneT Brabant congestion research + ASML high-tech corridor growth data',
+    notes:'Fastest-growing electricity demand zone in the Netherlands. ASML + Brainport Eindhoven tech ecosystem. EV campus charging, industrial automation, semiconductor fabs. Waiting list enormous — TenneT congestion management formally in place. New Tilburg 380kV + Geertruidenberg transformers give partial relief 2027. BESS at or near Eindhoven 380kV: highest demand-side congestion value in Brabant.'
+  },
+  {
+    id:'geertruidenberg', name:'Geertruidenberg', kv:380, lat:51.700, lng:4.850,
+    province:'Noord-Brabant',
+    congestion_score:8, bess_score:9,
+    waiting_list_mw:1200, overload_mw:190, relief_year:2027,
+    flex_demand_mw:450,
+    status:'CRITICAL',
+    source:'TenneT Brabant breakthrough announcement + congestion management 1,700 MW',
+    notes:'Key node for West-Brabant relief: extra transformer in 2026 releases 200 MW. Second transformer + Tilburg 380kV in 2027 releases 405 MW more. Until then: full congestion. TenneT congestion management = 1,700 MW across Brabant/Limburg. Future HVDC converter station planned for 2031 (offshore wind landing). BESS now earns congestion fees; post-2031 earns HVDC balancing services.'
+  },
+  {
+    id:'tilburg_new', name:'Tilburg (new 380kV)', kv:380, lat:51.565, lng:5.089,
+    province:'Noord-Brabant',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:900, overload_mw:140, relief_year:2027,
+    flex_demand_mw:350,
+    status:'CRITICAL',
+    source:'TenneT Tilburg De Spinder project + Brabant congestion update Dec 2025',
+    notes:'New 380kV substation under construction (De Spinder site). Will release 405 MW in East/South Brabant when commissioned with second Geertruidenberg transformer (~2027). Until then: fully congested. Area of central Brabant (Tilburg, Waalwijk) has NO new capacity. BESS at this future node: ground-floor opportunity, apply before commissioning to secure grid access and flex contract.'
+  },
+  {
+    id:'hertogenbosch', name:"'s-Hertogenbosch", kv:150, lat:51.686, lng:5.307,
+    province:'Noord-Brabant',
+    congestion_score:7, bess_score:7,
+    waiting_list_mw:500, overload_mw:90, relief_year:2033,
+    flex_demand_mw:250,
+    status:'HIGH',
+    source:'Enexis congestieonderzoek Den Bosch Noord + TenneT Brabant',
+    notes:'Den Bosch Noord congestion zone. Enexis research published for this specific area. Business parks, logistics, residential growth. Noordoost-Brabant businesses may wait until 2033–2036 for structural relief (new Wijchen station needed). BESS at local 150kV level: Enexis flexibility tender opportunity 2026+.'
+  },
+
+  // ─── UTRECHT ───────────────────────────────────────────────
+  {
+    id:'lageweide', name:'Utrecht (Lage Weide)', kv:150, lat:52.105, lng:5.060,
+    province:'Utrecht',
+    congestion_score:7, bess_score:8,
+    waiting_list_mw:281, overload_mw:60, relief_year:2033,
+    flex_demand_mw:320,
+    status:'HIGH',
+    source:'TenneT/Stedin Utrecht transportschaarste Feb 2025 + Stedin 2025',
+    notes:'250 MW capacity shortfall expected 2026–2029. TenneT/Stedin call for 320 MW flexibility until 2033. Waiting list: 1,156 offtake requests (281 MW) and 444 feed-in requests (173 MW). Grid-supporting BESS capped at ~50 MW per TenneT study (overload often exceeds what batteries can handle duration-wise). Best BESS case: fast-response congestion events + flexibility tender income.'
+  },
+  {
+    id:'breukelen', name:'Breukelen-Kortrijk', kv:380, lat:52.168, lng:5.004,
+    province:'Utrecht',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:400, overload_mw:80, relief_year:2029,
+    flex_demand_mw:280,
+    status:'CRITICAL',
+    source:'TenneT Uitbreiding Breukelen-Kortrijk project; 380/150kV transformer station — construction start early 2025',
+    notes:'Full TenneT 380/150kV transformer and switching station — a major bottleneck for Utrecht, Gelderland AND Flevoland. One of the four named key stations needing transformer addition (with Lelystad, Dodewaard, Doetinchem) to solve the 5,600 MW vs 3,350 MW overload cluster. Construction approved, start early 2025. Without this expansion, hundreds of homes, businesses and solar parks cannot connect to the HV grid in three provinces. TenneT also investigating further expansion of BKK for the new Utrecht-Noord connection. BESS at this node is highly attractive given the three-province demand footprint.'
+  },
+  {
+    id:'utrecht_noord', name:'Utrecht-Noord / Haarrijn (new 380kV)', kv:380, lat:52.088, lng:5.012,
+    province:'Utrecht',
+    congestion_score:7, bess_score:7,
+    waiting_list_mw:250, overload_mw:50, relief_year:2030,
+    flex_demand_mw:220,
+    status:'HIGH',
+    source:'Province of Utrecht approved Haarrijn location for exploration Nov 11, 2025; Utrecht-Noord TenneT project',
+    notes:'New 380kV station planned at Haarrijn, Utrecht. Province of Utrecht approved this as the preferred location on Nov 11, 2025. Will connect via new routes to existing stations Lage Weide and Breukelen-Kortrijk. Purpose: relieve Utrecht\'s growing capacity shortage (250 MW shortfall 2026–2029). Pre-development BESS opportunity: apply for grid access alongside the new station to lock in a position before commissioning creates a demand queue.'
+  },
+  {
+    id:'wijchen', name:'Wijchen (new 380kV)', kv:380, lat:51.812, lng:5.731,
+    province:'Gelderland',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:800, overload_mw:150, relief_year:2033,
+    flex_demand_mw:350,
+    status:'CRITICAL',
+    source:'TenneT Hoogspanningsstation bij Wijchen project; TenneT Brabant congestion — NE Brabant waits until 2033–2036',
+    notes:'New 380kV station planned in Wijchen (Gelderland/Noord-Brabant border) to connect the existing 380kV ring to the regional 150kV network in Noordoost-Brabant. Without Wijchen, businesses in NE Brabant (Nijmegen region, Oss, Uden) face waiting times of 2033–2036 for structural relief. This is the single station whose absence is creating the longest queue in Brabant. Pre-development BESS next to Wijchen is a strategic application: long congestion duration = maximum revenue window, and the station\'s purpose is explicitly to serve a demand-dense corridor.'
+  },
+
+  // ─── ZEELAND ───────────────────────────────────────────────
+  {
+    id:'borssele', name:'Borssele', kv:380, lat:51.422, lng:3.730,
+    province:'Zeeland',
+    congestion_score:6, bess_score:8,
+    waiting_list_mw:300, overload_mw:60, relief_year:2026,
+    flex_demand_mw:300,
+    status:'MEDIUM-HIGH',
+    source:'TenneT Borssele offshore connection + Air Liquide flex contract',
+    notes:'Borssele I–IV offshore wind park (1.5 GW) feeds into 380kV grid here + at new Rilland station. Nuclear baseload adds complexity. TenneT flex contract with Air Liquide providing 50–100 MW relief. Feed-in congestion peaks during high wind + low demand periods. BESS earns arbitrage + curtailment avoidance income. Relatively manageable but improving Rilland connection adds more feed-in.'
+  },
+  {
+    id:'rilland', name:'Rilland', kv:380, lat:51.424, lng:4.141,
+    province:'Zeeland',
+    congestion_score:5, bess_score:7,
+    waiting_list_mw:200, overload_mw:40, relief_year:2026,
+    flex_demand_mw:250,
+    status:'MEDIUM',
+    source:'TenneT Rilland substation for Borssele offshore wind connection',
+    notes:'New 380kV terminus for Borssele offshore wind connection. Commissioned to handle growing offshore feed-in from Borssele I–IV. Terneuzen chemical cluster nearby. As more offshore wind is planned for Zeeland waters, this node will see increasing feed-in pressure. Early BESS application window before next congestion cycle.'
+  },
+  {
+    id:'zeeuws_vl', name:'Zeeuws-Vlaanderen (new 380kV)', kv:380, lat:51.322, lng:3.825,
+    province:'Zeeland',
+    congestion_score:6, bess_score:7,
+    waiting_list_mw:220, overload_mw:45, relief_year:2028,
+    flex_demand_mw:200,
+    status:'MEDIUM-HIGH',
+    source:'TenneT Aanleg 380kV verbinding Zeeuws-Vlaanderen project',
+    notes:'TenneT is building a new 380kV connection in Zeeuws-Vlaanderen to serve the major chemical and industrial cluster around Terneuzen and Sluiskil (Dow, Yara, ArcelorMittal, Bio Base). Currently supplied only at 150kV, creating a bottleneck as industrial electrification and green hydrogen projects grow. The new 380kV connection upgrades the node to the national transmission ring. BESS pre-development opportunity: apply alongside the new 380kV infrastructure to secure grid access and earn congestion management fees as industrial load grows.'
+  },
+
+  // ─── OVERIJSSEL ────────────────────────────────────────────
+  {
+    id:'hengelo', name:'Hengelo', kv:380, lat:52.270, lng:6.800,
+    province:'Overijssel',
+    congestion_score:7, bess_score:7,
+    waiting_list_mw:350, overload_mw:80, relief_year:2031,
+    flex_demand_mw:200,
+    status:'HIGH',
+    source:'TenneT Overijssel congestion recalibration Dec 2025',
+    notes:'Industrial Twente region (Akzo Nobel, Thales, Nedstaal). Congestion recalibration results Dec 2025 showed persistent overload. No additional capacity found in 2024 assessments. Agricultural electrification adds distributed demand. BESS opportunity: Enexis flexibility tender 2026 + energy arbitrage in high-demand industrial zone.'
+  },
+  {
+    id:'zwolle', name:'Zwolle', kv:150, lat:52.510, lng:6.090,
+    province:'Overijssel',
+    congestion_score:6, bess_score:6,
+    waiting_list_mw:220, overload_mw:50, relief_year:2030,
+    flex_demand_mw:150,
+    status:'MEDIUM-HIGH',
+    source:'Enexis capaciteitskaart + Overijssel congestion data 2024',
+    notes:'Regional hub for Overijssel/Flevoland border zone. Growing industrial + logistics demand. Cross-connection to Flevoland wind zones. Smaller scale than western NL hotspots but persistent congestion. BESS mainly for DSO flexibility tenders (Enexis).'
+  },
+
+  // ─── DRENTHE ───────────────────────────────────────────────
+  {
+    id:'assen', name:'Assen (Drenthe hub)', kv:150, lat:52.990, lng:6.563,
+    province:'Drenthe',
+    congestion_score:6, bess_score:6,
+    waiting_list_mw:200, overload_mw:45, relief_year:2030,
+    flex_demand_mw:150,
+    status:'MEDIUM-HIGH',
+    source:'Enexis capaciteitskaart Drenthe Dec 2025 + no additional capacity found 2024',
+    notes:'No additional capacity found in 2024 Enexis assessment. New distribution stations in Ter Apelkanaal, Veenoord, Emmen under construction. Agricultural electrification (heat pumps, irrigation) + growing solar feed-in. Structural demand growth slower than western NL, but no buffer remaining. BESS value: DSO flex tenders, feed-in peak absorption.'
+  },
+
+  // ─── LIMBURG ───────────────────────────────────────────────
+  {
+    id:'maastricht', name:'Maastricht area', kv:150, lat:50.875, lng:5.720,
+    province:'Limburg',
+    congestion_score:6, bess_score:6,
+    waiting_list_mw:300, overload_mw:55, relief_year:2029,
+    flex_demand_mw:200,
+    status:'MEDIUM-HIGH',
+    source:'TenneT congestion management 1,700 MW Brabant+Limburg; Chemelot',
+    notes:'Part of the 1,700 MW Brabant/Limburg TenneT congestion management area. Chemelot industrial site (DSM, OCI) is one of NL\'s largest electricity consumers. Cross-border flows with Belgium/Germany add complexity. Congestion driven by industrial demand + slow local grid expansion. BESS earns congestion management fees + cross-border arbitrage.'
+  },
+  {
+    id:'venlo', name:'Venlo', kv:150, lat:51.370, lng:6.175,
+    province:'Limburg',
+    congestion_score:5, bess_score:5,
+    waiting_list_mw:180, overload_mw:35, relief_year:2028,
+    flex_demand_mw:120,
+    status:'MEDIUM',
+    source:'Enexis capaciteitskaart Limburg + logistics demand data 2024',
+    notes:'Major logistics hub (Amazon, DHL, DB Schenker). EV charging for heavy logistics fleet is a growing new load. Cross-border with Germany. Growing but not yet at CRITICAL stage. BESS pre-development opportunity — logistics sector incentivised to co-invest in storage.'
+  },
+
+  // ─── FRIESLAND ─────────────────────────────────────────────
+  {
+    id:'leeuwarden', name:'Leeuwarden', kv:150, lat:53.200, lng:5.799,
+    province:'Friesland',
+    congestion_score:5, bess_score:5,
+    waiting_list_mw:150, overload_mw:30, relief_year:2027,
+    flex_demand_mw:130,
+    status:'MEDIUM',
+    source:'Enexis Friesland limitation contracts + 880 MW identified',
+    notes:'880 MW identified via Enexis limitation contracts in Friesland/Flevoland/Groningen corridor. Wind power zone with growing solar. Managed through flexible contracts. Less acute than eastern/western regions. BESS opportunity mainly for wind balancing and DSO flexibility tenders (Enexis tenders planned 2026).'
+  },
+
+  // ─── MISSING TenneT 380kV STATIONS ─────────────────────────
+  {
+    id:'vierverlaten', name:'Vierverlaten', kv:380, lat:53.162, lng:6.490,
+    province:'Groningen',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:380, overload_mw:90, relief_year:2029,
+    flex_demand_mw:320,
+    status:'CRITICAL',
+    source:'TenneT Eemshaven–Vierverlaten 380kV (commissioned 2023); Vierverlaten–Ens 380kV NRD Jan 2024',
+    notes:'Major 380kV hub linking Groningen north-south corridor. Eemshaven–Vierverlaten 380kV connection commissioned summer 2023 (40 km, 13 years in preparation). Now subject of new Vierverlaten–Ens 380kV investigation (NRD Jan 2024) — critical for transporting Groningen/Frisian wind south to load centres. Feed-in congestion persists until Vierverlaten–Ens is realised (~2029+). BESS here earns congestion management income and balances north-to-south feed-in peaks.'
+  },
+  {
+    id:'bergum', name:'Bergum', kv:380, lat:53.196, lng:5.989,
+    province:'Friesland',
+    congestion_score:5, bess_score:5,
+    waiting_list_mw:150, overload_mw:30, relief_year:2026,
+    flex_demand_mw:120,
+    status:'MEDIUM',
+    source:'TenneT historical congestion triangle Eemshaven–Bergum–Zwolle; Enexis limitation contracts 2024',
+    notes:'Friesland 380kV hub. Part of the historical structural congestion triangle Eemshaven–Bergum–Zwolle (2017–2021), which was resolved by the Eemshaven–Vierverlaten 380kV connection. Situation has improved but Friesland grid is still managed through Enexis limitation contracts (part of 880 MW identified). Wind power zone. BESS opportunity for wind balancing and flexibility tenders.'
+  },
+  {
+    id:'wateringen', name:'Wateringen', kv:380, lat:52.026, lng:4.262,
+    province:'Zuid-Holland',
+    congestion_score:9, bess_score:8,
+    waiting_list_mw:550, overload_mw:100, relief_year:2029,
+    flex_demand_mw:380,
+    status:'CRITICAL',
+    source:'TenneT Randstad 380kV ring (Beverwijk–Bleiswijk–Wateringen); Stedin Zuid-Holland congestion Dec 2024',
+    notes:'Part of the Randstad 380kV ring (Beverwijk–Bleiswijk–Wateringen). Serves Den Haag, Westland greenhouse horticulture cluster, and South Randstad. Fully within the Zuid-Holland congestion zone declared Dec 2024. Stedin congestion announced for Den Haag surroundings Mar 2025. New transformers and network reinforcement needed; structural relief not before 2029. High BESS value: flexibility tenders for Stedin + TenneT congestion management.'
+  },
+  {
+    id:'bleiswijk', name:'Bleiswijk', kv:380, lat:51.988, lng:4.538,
+    province:'Zuid-Holland',
+    congestion_score:8, bess_score:8,
+    waiting_list_mw:420, overload_mw:80, relief_year:2027,
+    flex_demand_mw:300,
+    status:'CRITICAL',
+    source:'TenneT Randstad 380kV ring; Bleiswijk–Zevenhuizen underground cable project; Stedin Zuidplaspolder',
+    notes:'380kV station operational since 1999, part of the Randstad ring. TenneT building new 150kV station at Bleiswijk with underground cable to new Zevenhuizen/Zuidplaspolder station (~7 km along A12). Once commissioned (~2027) this relieves pressure on Krimpen and Rotterdam-East industrial corridor. Until then: Bleiswijk area fully congested within Zuid-Holland CRITICAL zone. BESS directly on the 380kV Bleiswijk node is a strong pre-commissioning opportunity.'
+  },
+  {
+    id:'maasbracht', name:'Maasbracht', kv:380, lat:51.154, lng:5.893,
+    province:'Limburg',
+    congestion_score:6, bess_score:7,
+    waiting_list_mw:200, overload_mw:50, relief_year:2028,
+    flex_demand_mw:220,
+    status:'MEDIUM-HIGH',
+    source:'TenneT Station Maasbracht renewal project; Maasbracht–Graetheide 380kV; Maasbracht–Einighausen upgrade',
+    notes:'Major 380/150kV station undergoing full renewal. Three overlapping TenneT projects: (1) full station renewal, (2) Maasbracht–Graetheide 380kV new connection for Chemelot industrial zone, (3) Maasbracht–Einighausen 380kV upgrade. Cross-border interconnection point with Belgium (Zandvliet) and Germany (Oberzier). Chemelot complex (DSM, OCI, LyondellBasell) load growing. BESS earns cross-border arbitrage income, industrial demand flexibility, and TenneT frequency regulation service.'
+  },
+  {
+    id:'graetheide', name:'Graetheide (new 380kV)', kv:380, lat:51.046, lng:5.820,
+    province:'Limburg',
+    congestion_score:7, bess_score:7,
+    waiting_list_mw:260, overload_mw:55, relief_year:2028,
+    flex_demand_mw:200,
+    status:'HIGH',
+    source:'TenneT Maasbracht–Graetheide 380kV project; Chemelot industrial complex electrification plans',
+    notes:'New 380/150kV station planned at Graetheide to serve the Chemelot chemical complex — one of NL\'s largest industrial sites (DSM, OCI, LyondellBasell, Sabic). Current 150kV supply via Maasbracht is insufficient for growing industrial electrification demand. New 380kV line Maasbracht–Graetheide being planned. Pre-development BESS opportunity: apply before commissioning to lock in grid access and congestion management contract alongside the new station.'
+  }
+];
+
+
+// ─── PROVINCES (background color only) ───────────────────────
+const PROV_SCORES = {
+  'Zuid-Holland':9,'Noord-Holland':8,'Groningen':8,'Gelderland':8,
+  'Utrecht':7,'Noord-Brabant':7,'Overijssel':7,'Drenthe':6,
+  'Limburg':6,'Flevoland':7,'Zeeland':5,'Friesland':5
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MAP INIT
+// ═══════════════════════════════════════════════════════════════
+const map = L.map('map',{zoomControl:true,attributionControl:false}).setView([52.2,5.1],8);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  subdomains:'abcd',maxZoom:19
+}).addTo(map);
+L.control.attribution({prefix:'© OpenStreetMap · CARTO · TenneT · Netbeheer NL · Stedin · Enexis · Liander'}).addTo(map);
+
+// ─── PANES — province sits BELOW station markers so clicks always reach dots ──
+map.createPane('provincesPane');
+map.getPane('provincesPane').style.zIndex = 250;   // below overlayPane(400) & shadowPane(500)
+map.getPane('provincesPane').style.pointerEvents = 'none'; // pass all mouse events through
+
+// ─── COLOR HELPERS ────────────────────────────────────────────
+function scoreColor(s) {
+  if(s>=8) return '#c0392b';
+  if(s>=6) return '#e67e22';
+  if(s>=4) return '#d4ac0d';
+  return '#27ae60';
+}
+function statusBadge(s) {
+  const m={CRITICAL:'s-crit',HIGH:'s-high','MEDIUM-HIGH':'s-mh',MEDIUM:'s-med'};
+  return `<span class="sbadge ${m[s]||'s-med'}">${s}</span>`;
+}
+
+// ─── PROVINCE LAYER ───────────────────────────────────────────
+let provLayer = null;
+fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/the-netherlands.geojson')
+  .then(r=>r.json())
+  .then(gj=>{
+    provLayer = L.geoJSON(gj,{
+      pane: 'provincesPane',
+      style: f=>{
+        const nm = f.properties.name||'';
+        const score = Object.entries(PROV_SCORES).find(([k])=>nm.includes(k.split(' ').pop())||k.includes(nm));
+        const s = score?score[1]:4;
+        return {fillColor:scoreColor(s),fillOpacity:0.22,color:'#0f2a3a',weight:1};
+      }
+    }).addTo(map);
+  }).catch(()=>{});
+
+// ─── STATION RINGS + DOTS (always on top, always clickable) ──
+const ringGroup = L.layerGroup().addTo(map);
+const dotGroup  = L.layerGroup().addTo(map);
+
+let stationMarkers = {}; // id -> leaflet marker for programmatic selection
+
+function buildStations() {
+  // Sorted by combined score for ring rendering order
+  const sorted = [...STATIONS].sort((a,b)=>(a.congestion_score+a.bess_score)-(b.congestion_score+b.bess_score));
+  sorted.forEach(s=>{
+    const col = scoreColor(s.congestion_score);
+    // Halo ring — size proportional to flex_demand_mw
+    const r = 14 + (s.flex_demand_mw/700)*34;
+    L.circleMarker([s.lat,s.lng],{
+      radius:r,
+      fillColor:col,fillOpacity:0.13,
+      color:col,weight:1.5,opacity:0.5
+    }).addTo(ringGroup);
+
+    // Main dot marker — TenneT 380kV = bright blue ring, DSO 150kV = grey-blue ring
+    const isHighKV = s.kv===380;
+    const dotR = isHighKV ? 8 : 6;
+    const brdColor = isHighKV ? '#4ab8ff' : '#3a7a9a';
+    const opLabel = isHighKV ? 'TenneT' : 'DSO (150kV)';
+    const m = L.circleMarker([s.lat,s.lng],{
+      radius:dotR,
+      fillColor:col,fillOpacity:0.95,
+      color:brdColor,weight:isHighKV?2.5:1.5
+    });
+    m.bindTooltip(
+      `<div class="ctt"><strong>${s.name}</strong>${s.kv} kV · <span style="color:${brdColor}">${opLabel}</span> · ${s.province}<br>Congestion: <b style="color:${col}">${s.congestion_score}/10</b> · BESS: <b style="color:#e67e22">${s.bess_score}/10</b></div>`,
+      {className:'leaflet-tooltip',sticky:true}
+    );
+    m.on('click',()=>selectStation(s.id));
+    m.addTo(dotGroup);
+    stationMarkers[s.id] = m;
+  });
+}
+buildStations();
+
+// Fill stat bar counts
+(()=>{
+  const t380 = STATIONS.filter(s=>s.kv===380).length;
+  const t150 = STATIONS.filter(s=>s.kv===150).length;
+  document.getElementById('stat-total').textContent  = STATIONS.length;
+  document.getElementById('stat-tennet').textContent = t380;
+  document.getElementById('stat-dso').textContent    = t150;
+})();
+
+// ─── RANKING LIST ─────────────────────────────────────────────
+function buildRanking() {
+  const sorted = [...STATIONS].sort((a,b)=>(b.congestion_score+b.bess_score)-(a.congestion_score+a.bess_score));
+  const el = document.getElementById('ranking-list');
+  el.innerHTML = '';
+  sorted.forEach((s,i)=>{
+    const combined = s.congestion_score + s.bess_score;
+    const col = scoreColor(s.congestion_score);
+    const div = document.createElement('div');
+    div.className = 'rank-item';
+    div.id = `rank-${s.id}`;
+    div.innerHTML = `
+      <div class="rank-num">${i+1}</div>
+      <div class="rank-bar-wrap">
+        <div class="rank-name">${s.name}</div>
+        <div class="rank-meta">${s.kv} kV · ${s.province} · WL: ${s.waiting_list_mw} MW</div>
+        <div class="rank-bar-bg">
+          <div class="rank-bar-fill" style="width:${(combined/20)*100}%;background:${col}"></div>
+        </div>
+      </div>
+      <div class="rank-score" style="color:${col}">${combined}</div>
+    `;
+    div.addEventListener('click',()=>selectStation(s.id));
+    el.appendChild(div);
+  });
+}
+buildRanking();
+
+// ─── STATION SELECTION ────────────────────────────────────────
+let activeId = null;
+function selectStation(id) {
+  const s = STATIONS.find(x=>x.id===id);
+  if(!s) return;
+  if(activeId) {
+    const prev = document.getElementById(`rank-${activeId}`);
+    if(prev) prev.classList.remove('active');
+  }
+  activeId = id;
+  const ri = document.getElementById(`rank-${id}`);
+  if(ri){ri.classList.add('active'); ri.scrollIntoView({block:'nearest'});}
+  map.setView([s.lat,s.lng],10,{animate:true});
+  renderDetail(s);
+}
+
+function renderDetail(s) {
+  const col = scoreColor(s.congestion_score);
+  const dp = document.getElementById('detail-panel');
+  const relBESSyr = s.relief_year ? `Until ${s.relief_year}` : 'Long-term';
+  const opLabel = s.kv===380 ? 'TenneT 380 kV' : 'DSO 150 kV (Liander / Stedin / Enexis)';
+  const opColor = s.kv===380 ? '#4ab8ff' : '#3a7a9a';
+  dp.innerHTML = `
+    <div class="dp-title">${s.name}</div>
+    <div class="dp-kv"><span style="color:${opColor};font-weight:700">${opLabel}</span> · ${s.province} · ${statusBadge(s.status)}</div>
+    <div class="dp-row"><span class="lbl">Congestion score</span><span class="val" style="color:${col}">${s.congestion_score}/10</span></div>
+    <div class="dp-row"><span class="lbl">BESS opportunity score</span><span class="val" style="color:#e67e22">${s.bess_score}/10</span></div>
+    <div class="dp-row"><span class="lbl">Waiting list</span><span class="val">${s.waiting_list_mw} MW</span></div>
+    <div class="dp-row"><span class="lbl">Peak overload</span><span class="val">${s.overload_mw} MW</span></div>
+    <div class="dp-row"><span class="lbl">Flex demand</span><span class="val">${s.flex_demand_mw} MW</span></div>
+    <div class="dp-row"><span class="lbl">Structural relief</span><span class="val">${relBESSyr}</span></div>
+    <div class="dp-bar"><div class="dp-bar-lbl">Congestion severity</div>
+      <div class="dp-bar-bg"><div class="dp-bar-fill" style="width:${s.congestion_score*10}%;background:${col}"></div></div></div>
+    <div class="dp-bar"><div class="dp-bar-lbl">BESS revenue window</div>
+      <div class="dp-bar-bg"><div class="dp-bar-fill" style="width:${s.bess_score*10}%;background:#e67e22"></div></div></div>
+    <div class="dp-notes">${s.notes}<br><br><span style="color:#2a6a4a;font-size:9px">Source: ${s.source}</span></div>
+  `;
+}
+
+
+// ─── LAYER TOGGLES ────────────────────────────────────────────
+document.getElementById('tog-prov').addEventListener('change',function(){
+  if(provLayer){this.checked?map.addLayer(provLayer):map.removeLayer(provLayer);}
+});
+document.getElementById('tog-ring').addEventListener('change',function(){
+  this.checked?map.addLayer(ringGroup):map.removeLayer(ringGroup);
+});
+document.getElementById('tog-dot').addEventListener('change',function(){
+  this.checked?map.addLayer(dotGroup):map.removeLayer(dotGroup);
+});
+
+// Auto-select top station on load
+setTimeout(()=>selectStation('maasvlakte'),600);
+
+</script>
+</body>
+</html>
