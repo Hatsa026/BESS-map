@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Industrial Land Opportunity Map | Netherlands</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Arial,sans-serif; background:#111; color:#e8e8e8; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+#header {
+  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);
+  padding:10px 18px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom:2px solid #2a4a7a;
+  flex-shrink:0; z-index:1000; position:relative;
+}
+#header h1 { font-size:15px; font-weight:700; color:#fff; }
+#header .sub { font-size:10px; color:#7aadcf; margin-top:2px; }
+.hbadge { background:#1e6b3a; color:#7dfc9c; font-size:9px; font-weight:800; padding:3px 10px; border-radius:10px; letter-spacing:0.5px; white-space:nowrap; }
+
+#stats-bar {
+  display:flex; gap:0;
+  background:#151520;
+  border-bottom:1px solid #2a3050;
+  flex-shrink:0;
+}
+.stat-box { flex:1; padding:7px 14px; border-right:1px solid #2a3050; }
+.stat-box:last-child { border-right:none; }
+.stat-val { font-size:18px; font-weight:800; color:#f97316; }
+.stat-val.orange { color:#f97316; }
+.stat-val.blue { color:#60a5fa; }
+.stat-val.loading { color:#555; font-size:14px; }
+.stat-lbl { font-size:9px; color:#666; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px; }
+
+/* Station filter bar — shown when a station is selected */
+#station-bar {
+  display:none; align-items:center; gap:8px;
+  background:#0a1628; border-bottom:1px solid #1e4a8a;
+  padding:5px 14px; flex-shrink:0;
+}
+#station-bar.active { display:flex; }
+#station-bar .sb-name { font-size:11px; font-weight:700; color:#60a5fa; }
+#station-bar .sb-label { font-size:10px; color:#555; }
+#station-bar select { background:#0e1a2e; border:1px solid #2a4a6a; color:#aac4e8; font-size:10px; padding:2px 5px; border-radius:3px; width:60px; }
+#station-bar button {
+  margin-left:auto; background:#1e2a3a; border:1px solid #2a4a6a; color:#7aadcf;
+  font-size:10px; padding:3px 9px; border-radius:3px; cursor:pointer; white-space:nowrap;
+}
+#station-bar button:hover { background:#2a3a4a; color:#fff; }
+
+#main { display:flex; flex:1; overflow:hidden; }
+#map { flex:1; }
+
+#sidebar {
+  width:310px; background:#0e0e18;
+  display:flex; flex-direction:column;
+  border-left:1px solid #1e2a3a;
+  flex-shrink:0; overflow:hidden;
+}
+
+.sb-section { padding:10px 14px; border-bottom:1px solid #1a2030; flex-shrink:0; }
+.sb-section h3 { font-size:9px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#4a9fd4; margin-bottom:7px; }
+
+/* Legend */
+.legend-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:10px; color:#bbb; }
+.legend-swatch { width:16px; height:16px; border-radius:3px; flex-shrink:0; border:1px solid rgba(255,255,255,0.15); }
+.legend-grad { height:12px; border-radius:4px; background:linear-gradient(90deg,#fde047,#f97316,#dc2626,#7f1d1d); border:1px solid rgba(255,255,255,0.2); margin-bottom:3px; }
+.legend-ticks { display:flex; justify-content:space-between; font-size:9px; color:#555; margin-bottom:9px; }
+.legend-divider { width:100%; height:1px; background:#1a2030; margin:6px 0; }
+
+/* Controls */
+.ctrl-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.ctrl-lbl { font-size:10px; color:#888; min-width:90px; }
+select { background:#1a2030; border:1px solid #2a3a50; color:#ccc; font-size:10px; padding:3px 6px; border-radius:3px; flex:1; }
+select:focus { outline:none; border-color:#4a9fd4; }
+
+/* Toggle */
+.tog { display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; }
+.tog input[type=checkbox] { width:0; height:0; opacity:0; position:absolute; }
+.tslider { width:28px; height:14px; border-radius:7px; background:#222; position:relative; transition:.2s; flex-shrink:0; }
+.tslider::after { content:''; width:10px; height:10px; border-radius:50%; background:#444; position:absolute; top:2px; left:2px; transition:.2s; }
+.tog input[type=checkbox]:checked+.tslider { background:#1e5c3a; }
+.tog input[type=checkbox]:checked+.tslider::after { left:16px; background:#7dfc9c; }
+.tlabel { font-size:11px; color:#aaa; }
+
+/* List */
+#estate-list { flex:1; overflow-y:auto; }
+#estate-list::-webkit-scrollbar { width:3px; }
+#estate-list::-webkit-scrollbar-thumb { background:#2a3050; }
+
+.est-item {
+  display:flex; align-items:stretch; gap:0;
+  padding:0; border-bottom:1px solid #121820;
+  cursor:pointer; transition:background .15s;
+}
+.est-item:hover { background:#141a28; }
+.est-item.active { background:#0e1e2e; border-left:3px solid #f97316; }
+.est-rank { font-size:10px; font-weight:800; color:#333; width:24px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#0a0a12; }
+.est-body { flex:1; min-width:0; padding:7px 8px; }
+.est-name { font-size:11px; font-weight:700; color:#ddd; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
+.est-meta { font-size:9px; color:#555; }
+.est-bars { display:flex; gap:2px; margin-top:4px; }
+.est-bar { height:4px; border-radius:2px; }
+.est-score { padding:7px 8px; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; flex-shrink:0; }
+.est-ha { font-size:12px; font-weight:800; }
+.est-ha-lbl { font-size:8px; color:#555; }
+.est-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin:auto 0; }
+
+/* Export bar */
+#export-bar { flex-shrink:0; padding:8px 14px; border-top:1px solid #1a2030; background:#08080e; }
+#btn-export {
+  width:100%; background:#1a2030; border:1px solid #2a4a6a; color:#7aadcf;
+  font-size:10px; font-weight:700; padding:5px; border-radius:4px; cursor:pointer;
+  letter-spacing:0.5px; text-transform:uppercase;
+}
+#btn-export:hover { background:#1e3050; color:#fff; }
+
+/* Detail panel */
+#detail-panel {
+  flex-shrink:0; background:#08080e;
+  border-top:2px solid #1e3050;
+  overflow-y:auto; max-height:40%;
+  padding:12px 14px;
+  display:none;
+}
+#detail-panel.visible { display:block; }
+#detail-panel::-webkit-scrollbar { width:3px; }
+#detail-panel::-webkit-scrollbar-thumb { background:#1a2030; }
+.dp-title { font-size:13px; font-weight:800; color:#fff; margin-bottom:1px; }
+.dp-sub { font-size:10px; color:#4a8aaa; margin-bottom:8px; }
+.dp-row { display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #0e1520; font-size:10px; }
+.dp-row .lbl { color:#4a6a7a; }
+.dp-row .val { color:#c8e0f8; font-weight:700; }
+.dp-row .val.green { color:#7dfc9c; }
+.dp-section { font-size:9px; color:#2a6aaa; text-transform:uppercase; letter-spacing:0.8px; margin:7px 0 2px; }
+
+/* Loading overlay */
+#loading-overlay {
+  position:absolute; top:0; left:0; right:0; bottom:0;
+  background:rgba(8,8,14,0.85); z-index:2000;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  pointer-events:none;
+}
+#loading-overlay.hidden { display:none; }
+.loader-title { font-size:14px; font-weight:700; color:#7dfc9c; margin-bottom:8px; }
+.loader-msg { font-size:11px; color:#666; margin-bottom:14px; }
+.loader-bar-bg { width:200px; height:4px; background:#1a2030; border-radius:2px; }
+.loader-bar-fill { height:4px; background:linear-gradient(90deg,#1e5c3a,#7dfc9c); border-radius:2px; transition:width .3s; }
+
+#empty-msg { padding:20px; text-align:center; color:#444; font-size:11px; display:none; }
+
+/* Tooltip — dark card, large ha value */
+.leaflet-tooltip.map-tip {
+  background:rgba(6,6,18,0.93) !important;
+  border:1px solid rgba(255,255,255,0.12) !important;
+  border-radius:7px !important;
+  padding:9px 13px !important;
+  box-shadow:0 4px 16px rgba(0,0,0,0.7) !important;
+  color:#fff;
+  font-family:'Segoe UI',Arial,sans-serif;
+  font-size:11px;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.leaflet-tooltip.map-tip::before { display:none !important; }
+
+/* Station tooltip */
+.leaflet-tooltip.station-tip {
+  background:rgba(6,6,24,0.88) !important;
+  border:1px solid #1e4a8a !important;
+  border-radius:5px !important;
+  padding:4px 9px !important;
+  box-shadow:none !important;
+  color:#60a5fa;
+  font-size:10px; font-weight:700;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.leaflet-tooltip.station-tip::before { display:none !important; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>🏭 Industrial Land Opportunity Map — Netherlands</h1>
+    <div class="sub">All IBIS bedrijventerreinen within 5 km of BESS substations · coloured = uitgeefbaar ≥ 0.5 ha · IBIS 2024</div>
+  </div>
+  <span class="hbadge">BESS SITING TOOL</span>
+</div>
+
+<div id="stats-bar">
+  <div class="stat-box">
+    <div class="stat-val loading" id="st-total">—</div>
+    <div class="stat-lbl">Estates in view (all)</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-val loading" id="st-estates">—</div>
+    <div class="stat-lbl">With vacancy (≥ 0.5 ha)</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-val loading" id="st-vacant">—</div>
+    <div class="stat-lbl">Ha net uitgeefbaar total</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-val blue" id="st-stations">93</div>
+    <div class="stat-lbl">BESS substations · click to filter</div>
+  </div>
+</div>
+
+<!-- Station filter bar (shown when a station dot is clicked) -->
+<div id="station-bar">
+  <span class="sb-label">📍</span>
+  <span class="sb-name" id="sb-name">—</span>
+  <span class="sb-label">within</span>
+  <select id="sel-stationdist">
+    <option value="2">2 km</option>
+    <option value="3">3 km</option>
+    <option value="5" selected>5 km</option>
+  </select>
+  <button id="btn-clear-station">✕ Clear station</button>
+</div>
+
+<div id="main">
+  <div id="map">
+    <div id="loading-overlay">
+      <div class="loader-title">Loading industrial estates…</div>
+      <div class="loader-msg" id="loader-msg">Fetching IBIS data from RVO…</div>
+      <div class="loader-bar-bg"><div class="loader-bar-fill" id="loader-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <div class="sb-section">
+      <h3>Legend</h3>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(170,170,170,0.22);border:1px solid #999"></div><span style="color:#888">Estate boundary — no recorded vacancy</span></div>
+      <div class="legend-divider"></div>
+      <div style="font-size:9px;color:#4a9fd4;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px">Uitgeefbaar (net, excl. roads)</div>
+      <div class="legend-grad"></div>
+      <div class="legend-ticks"><span>0.5 ha</span><span>2 ha</span><span>5 ha</span><span>15+ ha</span></div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#fde047"></div><strong style="color:#fde047">0.5 – 2 ha</strong></div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#f97316"></div><strong style="color:#f97316">2 – 5 ha</strong></div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#dc2626"></div><strong style="color:#dc2626">5 – 15 ha</strong></div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#7f1d1d;border-color:#ef4444"></div><strong style="color:#ef4444">15+ ha</strong></div>
+    </div>
+
+    <div class="sb-section">
+      <h3>Display &amp; Filters</h3>
+      <label class="tog">
+        <input type="checkbox" id="tog-inventory" checked>
+        <div class="tslider"></div>
+        <span class="tlabel">Show all estate boundaries</span>
+      </label>
+      <div class="ctrl-row">
+        <span class="ctrl-lbl">Min uitgeefbaar</span>
+        <select id="sel-minha">
+          <option value="0.5">≥ 0.5 ha</option>
+          <option value="1">≥ 1 ha</option>
+          <option value="2">≥ 2 ha</option>
+          <option value="5">≥ 5 ha</option>
+          <option value="10">≥ 10 ha</option>
+        </select>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-lbl">Province</span>
+        <select id="sel-province">
+          <option value="">All provinces</option>
+        </select>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-lbl">Sort by</span>
+        <select id="sel-sort">
+          <option value="ha">Most ha uitgeefbaar</option>
+          <option value="dist">Nearest to station</option>
+          <option value="pct">Highest % vacant</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="estate-list">
+      <div id="empty-msg">No estates match the current filters.</div>
+    </div>
+
+    <div id="export-bar">
+      <button id="btn-export">↓ Export list as CSV</button>
+    </div>
+
+    <div id="detail-panel">
+      <div class="dp-title" id="dp-name">—</div>
+      <div class="dp-sub" id="dp-sub">—</div>
+      <div class="dp-section">Net uitgeefbaar (excl. roads)</div>
+      <div class="dp-row"><span class="lbl">Available buildable land</span><span class="val green" id="dp-vacant">—</span></div>
+      <div class="dp-row"><span class="lbl">of which: municipality</span><span class="val" id="dp-vac-gem">—</span></div>
+      <div class="dp-row"><span class="lbl">of which: private</span><span class="val" id="dp-vac-pr">—</span></div>
+      <div class="dp-row"><span class="lbl">% of net area still vacant</span><span class="val" id="dp-pct">—</span></div>
+      <div class="dp-section">Estate details</div>
+      <div class="dp-row"><span class="lbl">Gross area</span><span class="val" id="dp-bruto">—</span></div>
+      <div class="dp-row"><span class="lbl">Net usable area</span><span class="val" id="dp-netto">—</span></div>
+      <div class="dp-row"><span class="lbl">Municipality</span><span class="val" id="dp-gem">—</span></div>
+      <div class="dp-row"><span class="lbl">Province</span><span class="val" id="dp-prov">—</span></div>
+      <div class="dp-row"><span class="lbl">Nearest station</span><span class="val" id="dp-station">—</span></div>
+      <div class="dp-row"><span class="lbl">Distance to station</span><span class="val" id="dp-dist">—</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// — BESS Stations (93 total: TenneT 380kV + key DSO 150kV) ———————————————————————————————————————
+const BESS_STATIONS = [
+  {name:'Maasvlakte',lat:51.956,lng:4.016},{name:'Krimpen a/d IJssel',lat:51.921,lng:4.617},
+  {name:'Europoort',lat:51.942,lng:4.047},{name:'Diemen',lat:52.348,lng:4.979},
+  {name:'Vijfhuizen',lat:52.341,lng:4.700},{name:'Beverwijk',lat:52.493,lng:4.655},
+  {name:'Oostzaan',lat:52.426,lng:4.883},{name:'Middenmeer',lat:52.800,lng:4.991},
+  {name:'Eemshaven',lat:53.433,lng:6.837},{name:'Delfzijl/Weiwerd',lat:53.315,lng:6.900},
+  {name:'Meeden',lat:53.091,lng:6.927},{name:'Weiwerd',lat:53.303,lng:6.838},
+  {name:'Dodewaard',lat:51.893,lng:5.653},{name:'Doetinchem',lat:51.967,lng:6.295},
+  {name:'Arnhem',lat:51.985,lng:5.909},{name:'Lelystad',lat:52.520,lng:5.465},
+  {name:'Ens',lat:52.638,lng:5.668},{name:'Almere/Zeewolde',lat:52.342,lng:5.338},
+  {name:'Eindhoven',lat:51.440,lng:5.470},{name:'Geertruidenberg',lat:51.700,lng:4.850},
+  {name:'Tilburg',lat:51.565,lng:5.089},{name:'Utrecht Lage Weide',lat:52.105,lng:5.060},
+  {name:'Breukelen',lat:52.168,lng:5.004},{name:'Utrecht-Noord',lat:52.088,lng:5.012},
+  {name:'Wijchen',lat:51.812,lng:5.731},{name:'Borssele',lat:51.422,lng:3.730},
+  {name:'Rilland',lat:51.424,lng:4.141},{name:'Zeeuws-Vlaanderen',lat:51.322,lng:3.825},
+  {name:'Hengelo',lat:52.270,lng:6.800},{name:'Zwolle',lat:52.510,lng:6.090},
+  {name:'Assen',lat:52.990,lng:6.563},{name:'Maastricht',lat:50.875,lng:5.720},
+  {name:'Venlo',lat:51.370,lng:6.175},{name:'Leeuwarden',lat:53.200,lng:5.799},
+  {name:'Vierverlaten',lat:53.162,lng:6.490},{name:'Bergum',lat:53.196,lng:5.989},
+  {name:'Wateringen',lat:52.026,lng:4.262},{name:'Bleiswijk',lat:51.988,lng:4.538},
+  {name:'Maasbracht',lat:51.154,lng:5.893},{name:'Graetheide',lat:51.046,lng:5.820},
+  {name:'Alkmaar',lat:52.631,lng:4.744},{name:'Amsterdam Westhaven',lat:52.396,lng:4.861},
+  {name:'Amsterdam Zuidoost',lat:52.315,lng:4.990},{name:'Haarlem',lat:52.380,lng:4.635},
+  {name:'Hoorn',lat:52.643,lng:5.060},{name:'Spaarndam',lat:52.408,lng:4.680},
+  {name:'Velsen',lat:52.463,lng:4.666},{name:'Weesp',lat:52.308,lng:5.038},
+  {name:'Den Haag Ypenburg',lat:52.045,lng:4.357},{name:'Dordrecht',lat:51.806,lng:4.668},
+  {name:'Gorinchem',lat:51.833,lng:4.972},{name:'Hoek van Holland',lat:51.978,lng:4.134},
+  {name:'Leiden',lat:52.156,lng:4.497},{name:'Rotterdam Botlek',lat:51.889,lng:4.309},
+  {name:'Rotterdam Waalhaven',lat:51.900,lng:4.449},{name:'Sassenheim',lat:52.222,lng:4.527},
+  {name:'Schiedam',lat:51.924,lng:4.399},{name:'Goes',lat:51.505,lng:3.889},
+  {name:'Middelburg',lat:51.499,lng:3.614},{name:'Terneuzen',lat:51.342,lng:3.830},
+  {name:'Vlissingen Oost',lat:51.454,lng:3.717},{name:'Bergen op Zoom',lat:51.497,lng:4.288},
+  {name:'Boxmeer',lat:51.646,lng:5.947},{name:'Boxtel',lat:51.589,lng:5.327},
+  {name:'Breda',lat:51.590,lng:4.776},{name:'Den Bosch',lat:51.692,lng:5.299},
+  {name:'Eindhoven Noord',lat:51.468,lng:5.459},{name:'Eindhoven Oost',lat:51.435,lng:5.514},
+  {name:'Eindhoven West',lat:51.449,lng:5.399},{name:'Haps',lat:51.717,lng:5.878},
+  {name:'Helmond',lat:51.475,lng:5.665},{name:'Moerdijk',lat:51.700,lng:4.612},
+  {name:'Oss',lat:51.770,lng:5.521},{name:'Roosendaal',lat:51.523,lng:4.464},
+  {name:'Tilburg Noord',lat:51.581,lng:5.074},{name:'Tilburg West',lat:51.556,lng:4.990},
+  {name:'Tilburg Zuid',lat:51.533,lng:5.042},{name:'Uden',lat:51.660,lng:5.621},
+  {name:'Apeldoorn',lat:52.211,lng:5.969},{name:'Ede',lat:52.043,lng:5.664},
+  {name:'Nijmegen',lat:51.849,lng:5.863},{name:'Amersfoort',lat:52.156,lng:5.387},
+  {name:'Heerlen',lat:50.888,lng:5.979},{name:'Maastricht Limmel',lat:50.876,lng:5.726},
+  {name:'Maastricht Randwyck',lat:50.837,lng:5.687},{name:'Enschede',lat:52.218,lng:6.895},
+  {name:'Emmen',lat:52.790,lng:6.897},{name:'Hoogeveen',lat:52.726,lng:6.478},
+  {name:'Meppel',lat:52.697,lng:6.197},{name:'Musselkanaal',lat:52.938,lng:7.018},
+  {name:'Westerlée',lat:53.163,lng:6.880},{name:'Oudehaske',lat:52.907,lng:5.930}
+];
+
+// — Helpers ——————————————————————————————————————————————————————————————————————————————————————
+function distKm(lat1,lng1,lat2,lng2){
+  const R=6371,dL=(lat2-lat1)*Math.PI/180,dl=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dL/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dl/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function nearestStation(lat,lng){
+  let best=null,bestD=Infinity;
+  BESS_STATIONS.forEach(s=>{ const d=distKm(lat,lng,s.lat,s.lng); if(d<bestD){bestD=d;best=s;} });
+  return {station:best,dist:bestD};
+}
+function isWithin5km(lat,lng){
+  return BESS_STATIONS.some(s=>distKm(lat,lng,s.lat,s.lng)<=5);
+}
+function geoCentroid(geometry){
+  let ring;
+  if(geometry.type==='Polygon') ring=geometry.coordinates[0];
+  else if(geometry.type==='MultiPolygon') ring=geometry.coordinates[0][0];
+  else return null;
+  if(!ring||!ring.length) return null;
+  let lngS=0,latS=0;
+  ring.forEach(([x,y])=>{lngS+=x;latS+=y;});
+  return [latS/ring.length, lngS/ring.length]; //[lat,lng]
+}
+function ringsToLatLngs(rings){ return rings.map(ring=>ring.map(([x,y])=>L.latLng(y,x))); }
+function haColor(ha){
+  if(ha>=15) return '#7f1d1d';
+  if(ha>=5)  return '#dc2626';
+  if(ha>=2)  return '#f97316';
+  return '#fde047';
+}
+function fmt(n,unit='ha'){ return (n==null||n===0)?'—':n.toFixed(1)+' '+unit; }
+
+// — Map Init ────────────────────────────────────────────────────────────────────────────────
+const map = L.map('map',{center:[52.15,5.30],zoom:8,zoomControl:true});
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+  attribution:'Tiles © ESRI | IBIS data © RVO / Interprovinciaal Overleg', maxZoom:19
+}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{
+  maxZoom:19, opacity:0.7
+}).addTo(map);
+
+// Panes
+map.createPane('inventoryPane'); map.getPane('inventoryPane').style.zIndex=350; map.getPane('inventoryPane').style.pointerEvents='none';
+map.createPane('estatesPane');   map.getPane('estatesPane').style.zIndex=400;
+map.createPane('stationsPane');  map.getPane('stationsPane').style.zIndex=450;
+
+// — BESS Station markers — clickable to filter ──────────────────────────────────────────────
+let selectedStation = null;
+const stationMarkerMap = {}; // name -> L.circleMarker
+
+const stationLayer = L.layerGroup().addTo(map);
+BESS_STATIONS.forEach(s=>{
+  const m = L.circleMarker([s.lat,s.lng],{
+    radius:5, fillColor:'#60a5fa', color:'#1e40af',
+    weight:1.5, fillOpacity:0.9, pane:'stationsPane', interactive:true
+  });
+  m.bindTooltip(
+    `<strong>${s.name}</strong><br><span style="font-weight:400;color:#aac4e8">Click to filter estates</span>`,
+    {sticky:true, className:'station-tip', opacity:1}
+  );
+  m.on('click', ()=> selectStation(s, m));
+  m.addTo(stationLayer);
+  stationMarkerMap[s.name] = m;
+});
+
+function selectStation(s, marker){
+  // Reset previous marker style
+  if(selectedStation && stationMarkerMap[selectedStation.name]){
+    stationMarkerMap[selectedStation.name].setStyle({radius:5, fillColor:'#60a5fa', color:'#1e40af', weight:1.5});
+  }
+  selectedStation = s;
+  marker.setStyle({radius:8, fillColor:'#ffffff', color:'#60a5fa', weight:2.5});
+  document.getElementById('station-bar').classList.add('active');
+  document.getElementById('sb-name').textContent = s.name;
+  applyFilters();
+}
+
+document.getElementById('btn-clear-station').addEventListener('click', ()=>{
+  if(selectedStation && stationMarkerMap[selectedStation.name]){
+    stationMarkerMap[selectedStation.name].setStyle({radius:5, fillColor:'#60a5fa', color:'#1e40af', weight:1.5});
+  }
+  selectedStation = null;
+  document.getElementById('station-bar').classList.remove('active');
+  applyFilters();
+});
+document.getElementById('sel-stationdist').addEventListener('change', ()=>{ if(selectedStation) applyFilters(); });
+
+// — Data State ───────────────────────────────────────────────────────────────────────────────
+let allEstates = [];
+let visibleEstates = [];
+let selectedId = null;
+let estatePolygons = {};
+
+const inventoryLayerGroup = L.layerGroup().addTo(map);
+const estateLayerGroup    = L.layerGroup().addTo(map);
+
+// — ArcGIS / IBIS Fetch ──────────────────────────────────────────────────────────────────────
+const ARCGIS = 'https://services.arcgis.com/nSZVuSZjHpEZZbRo/arcgis/rest/services/IBIS_Bedrijventerreinen_actueel/FeatureServer/0/query';
+const WHERE  = "HA_NETTO > 0";
+const FIELDS = 'OBJECTID,PLAN_NAAM,KERN_NAAM,PROV_NAMEN,HA_BRUTO,HA_NETTO,HA_NTUITGM,HA_NTUITPR';
+
+async function fetchCount(){
+  const r = await fetch(`${ARCGIS}?where=${encodeURIComponent(WHERE)}&returnCountOnly=true&f=json`);
+  return (await r.json()).count || 0;
+}
+async function fetchBatch(offset){
+  const url = `${ARCGIS}?` + new URLSearchParams({
+    where:WHERE, outFields:FIELDS, outSR:'4326', returnGeometry:'true',
+    geometryPrecision:'4', maxAllowableOffset:'0.00004',
+    resultRecordCount:'2000', resultOffset:String(offset), f:'geojson'
+  });
+  return (await fetch(url)).json();
+}
+
+async function loadData(){
+  const overlay=document.getElementById('loading-overlay');
+  const msg=document.getElementById('loader-msg');
+  const bar=document.getElementById('loader-bar');
+  try {
+    msg.textContent='Counting all bedrijventerreinen…';
+    const total = await fetchCount();
+    let offset=0, loaded=0;
+    while(true){
+      bar.style.width=Math.round((loaded/Math.max(total,1))*100)+'%';
+      msg.textContent=`Loading estates ${loaded+1}–${Math.min(loaded+2000,total)} of ${total}…`;
+      const data = await fetchBatch(offset);
+      if(!data.features||!data.features.length) break;
+      processFeatures(data.features);
+      loaded+=data.features.length; offset+=2000;
+      if(data.features.length<2000) break;
+    }
+    bar.style.width='100%';
+    msg.textContent=`Filtering ${loaded} estates by proximity…`;
+    await new Promise(r=>setTimeout(r,80));
+    finishLoading();
+    overlay.classList.add('hidden');
+  } catch(err){ msg.textContent='Error: '+err.message; console.error(err); }
+}
+
+function processFeatures(features){
+  features.forEach(f=>{
+    if(!f.geometry) return;
+    const p=f.properties;
+    const netto=p.HA_NETTO||0;
+    if(netto<=0) return;
+    const c=geoCentroid(f.geometry);
+    if(!c||!isWithin5km(c[0],c[1])) return;
+    const rawVacant=(p.HA_NTUITGM||0)+(p.HA_NTUITPR||0);
+    const vacant=Math.min(rawVacant,netto);
+    const isOpportunity=vacant>=0.5;
+    const pctVacant=netto>0?Math.round((vacant/netto)*100):0;
+    const near=nearestStation(c[0],c[1]);
+    allEstates.push({
+      id:p.OBJECTID, name:p.PLAN_NAAM||'Unnamed',
+      municipality:p.KERN_NAAM||'', province:p.PROV_NAMEN||'',
+      bruto:p.HA_BRUTO||0, netto, vacantGem:p.HA_NTUITGM||0, vacantPr:p.HA_NTUITPR||0,
+      vacant, pctVacant, isOpportunity, centroid:c,
+      nearStation:near.station, nearDist:near.dist, geometry:f.geometry
+    });
+  });
+}
+
+function finishLoading(){
+  const provs=[...new Set(allEstates.map(e=>e.province).filter(Boolean))].sort();
+  const sel=document.getElementById('sel-province');
+  provs.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
+  applyFilters();
+}
+
+// — Filtering & Rendering ────────────────────────────────────────────────────────────────────
+function applyFilters(){
+  const minHa     = parseFloat(document.getElementById('sel-minha').value)||0.5;
+  const provFilter= document.getElementById('sel-province').value;
+  const sortBy    = document.getElementById('sel-sort').value;
+  const stDist    = selectedStation ? (parseFloat(document.getElementById('sel-stationdist').value)||5) : null;
+
+  visibleEstates = allEstates.filter(e=>{
+    if(!e.isOpportunity) return false;
+    if(provFilter && e.province!==provFilter) return false;
+    if(e.vacant<minHa) return false;
+    if(stDist!==null){
+      const d=distKm(e.centroid[0],e.centroid[1],selectedStation.lat,selectedStation.lng);
+      if(d>stDist) return false;
+    }
+    return true;
+  });
+
+  if(sortBy==='dist') visibleEstates.sort((a,b)=>a.nearDist-b.nearDist);
+  else if(sortBy==='pct') visibleEstates.sort((a,b)=>b.pctVacant-a.pctVacant);
+  else visibleEstates.sort((a,b)=>b.vacant-a.vacant);
+
+  const inventoryEstates = allEstates.filter(e=>!provFilter||e.province===provFilter);
+  renderMap(inventoryEstates);
+  renderList();
+  updateStats(inventoryEstates);
+}
+
+function makePoly(e,opts){
+  const g=e.geometry;
+  if(g.type==='Polygon') return L.polygon(ringsToLatLngs(g.coordinates),opts);
+  if(g.type==='MultiPolygon') return L.polygon(g.coordinates.map(r=>ringsToLatLngs(r)),opts);
+  return null;
+}
+
+function renderMap(inventoryEstates){
+  inventoryLayerGroup.clearLayers();
+  estateLayerGroup.clearLayers();
+  estatePolygons={};
+  const showInv=document.getElementById('tog-inventory').checked;
+
+  if(showInv){
+    inventoryEstates.forEach(e=>{
+      const poly=makePoly(e,{fillColor:'#aaaaaa',fillOpacity:0.18,color:'#aaa',weight:1.0,pane:'inventoryPane'});
+      if(!poly) return;
+      if(!e.isOpportunity){
+        poly.bindTooltip(
+          `<div style="font-size:11px;font-weight:600;color:#ccc">${e.name}</div>`+
+          `<div style="font-size:9px;color:#666;margin-top:2px">${e.municipality} · ${e.netto.toFixed(1)} ha net · fully occupied</div>`,
+          {sticky:true,className:'map-tip',opacity:1});
+      }
+      poly.addTo(inventoryLayerGroup);
+    });
+  }
+
+  visibleEstates.forEach(e=>{
+    const col=haColor(e.vacant);
+    const poly=makePoly(e,{fillColor:col,fillOpacity:0.62,color:'rgba(0,0,0,0.4)',weight:1,pane:'estatesPane'});
+    if(!poly) return;
+
+    const distLine = e.nearStation
+      ? `<div style="font-size:10px;color:#888;margin-top:5px">${e.nearDist.toFixed(1)} km to ${e.nearStation.name}</div>`
+      : '';
+    poly.bindTooltip(
+      `<div style="font-size:11px;font-weight:600;color:#ccc;margin-bottom:1px">${e.name}</div>`+
+      `<div style="font-size:9px;color:#777;margin-bottom:6px">${e.municipality} · ${e.province}</div>`+
+      `<div style="font-size:26px;font-weight:900;color:#fff;line-height:1;letter-spacing:-0.5px">${e.vacant.toFixed(1)}<span style="font-size:14px;font-weight:600;color:#bbb"> ha uitgeefbaar</span></div>`+
+      `<div style="font-size:9px;color:#666;margin-top:4px">${e.pctVacant}% of ${e.netto.toFixed(1)} ha net</div>`+
+      distLine,
+      {sticky:true,className:'map-tip',opacity:1});
+
+    poly.on('click',()=>selectEstate(e.id));
+    poly.addTo(estateLayerGroup);
+    estatePolygons[e.id]=poly;
+  });
+}
+
+function renderList(){
+  const list=document.getElementById('estate-list');
+  const empty=document.getElementById('empty-msg');
+  list.querySelectorAll('.est-item').forEach(el=>el.remove());
+  if(!visibleEstates.length){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  const top=visibleEstates.slice(0,100);
+  const maxHa=visibleEstates[0].vacant;
+  top.forEach((e,i)=>{
+    const item=document.createElement('div');
+    item.className='est-item'+(e.id===selectedId?' active':'');
+    item.dataset.id=e.id;
+    const barW=Math.max(4,Math.round((e.vacant/maxHa)*76));
+    const col=haColor(e.vacant);
+    item.innerHTML=`
+      <div class="est-rank">${i+1}</div>
+      <div class="est-body">
+        <div class="est-name" title="${e.name}">${e.name}</div>
+        <div class="est-meta">${e.municipality} · ${e.province}</div>
+        <div class="est-bars"><div class="est-bar" style="width:${barW}px;background:${col}"></div></div>
+      </div>
+      <div class="est-score">
+        <div class="est-ha" style="color:${col}">${e.vacant.toFixed(1)}</div>
+        <div class="est-ha-lbl">ha vacant</div>
+      </div>
+      <div class="est-dot" style="background:${col};margin-right:8px"></div>`;
+    item.addEventListener('click',()=>selectEstate(e.id));
+    list.appendChild(item);
+  });
+}
+
+function updateStats(inventoryEstates){
+  const totalVacant=visibleEstates.reduce((s,e)=>s+e.vacant,0);
+  document.getElementById('st-total').textContent=inventoryEstates.length;
+  document.getElementById('st-total').classList.remove('loading');
+  document.getElementById('st-estates').textContent=visibleEstates.length;
+  document.getElementById('st-estates').classList.remove('loading');
+  document.getElementById('st-vacant').textContent=totalVacant.toFixed(1);
+  document.getElementById('st-vacant').classList.remove('loading');
+}
+
+// — Selection ────────────────────────────────────────────────────────────────────────────────
+function selectEstate(id){
+  if(selectedId&&estatePolygons[selectedId]) estatePolygons[selectedId].setStyle({weight:1,color:'rgba(0,0,0,0.4)'});
+  selectedId=id;
+  const e=allEstates.find(x=>x.id===id);
+  if(!e) return;
+  if(estatePolygons[id]){
+    estatePolygons[id].setStyle({weight:2.5,color:haColor(e.vacant)});
+    map.fitBounds(estatePolygons[id].getBounds(),{padding:[20,20],maxZoom:16});
+  }
+  document.querySelectorAll('.est-item').forEach(el=>el.classList.toggle('active',el.dataset.id==id));
+  document.getElementById('detail-panel').classList.add('visible');
+  document.getElementById('dp-name').textContent=e.name;
+  document.getElementById('dp-sub').textContent=`${e.municipality} · ${e.province}`;
+  document.getElementById('dp-vacant').textContent=e.vacant>=0.05?e.vacant.toFixed(2)+' ha':'—';
+  document.getElementById('dp-vac-gem').textContent=e.vacantGem>=0.05?e.vacantGem.toFixed(2)+' ha (gemeente)':'—';
+  document.getElementById('dp-vac-pr').textContent=e.vacantPr>=0.05?e.vacantPr.toFixed(2)+' ha (particulier)':'—';
+  document.getElementById('dp-pct').textContent=e.pctVacant+'% of net usable area';
+  document.getElementById('dp-bruto').textContent=fmt(e.bruto);
+  document.getElementById('dp-netto').textContent=fmt(e.netto);
+  document.getElementById('dp-gem').textContent=e.municipality||'—';
+  document.getElementById('dp-prov').textContent=e.province||'—';
+  document.getElementById('dp-station').textContent=e.nearStation?e.nearStation.name:'—';
+  document.getElementById('dp-dist').textContent=e.nearDist?e.nearDist.toFixed(1)+' km':'—';
+}
+
+// — Export CSV ───────────────────────────────────────────────────────────────────────────────
+document.getElementById('btn-export').addEventListener('click',()=>{
+  if(!visibleEstates.length){ alert('No estates to export.'); return; }
+  const hdr=['Rank','Estate','Municipality','Province','Vacant ha','Net ha','% vacant','Nearest station','Dist to station km','Lat','Lng'];
+  const rows=visibleEstates.map((e,i)=>[
+    i+1, `"${e.name}"`, `"${e.municipality}"`, `"${e.province}"`,
+    e.vacant.toFixed(2), e.netto.toFixed(2), e.pctVacant,
+    `"${e.nearStation?e.nearStation.name:''}"`, e.nearDist.toFixed(2),
+    e.centroid[0].toFixed(6), e.centroid[1].toFixed(6)
+  ]);
+  const csv=[hdr,...rows].map(r=>r.join(',')).join('\n');
+  const a=Object.assign(document.createElement('a'),{
+    href:'data:text/csv;charset=utf-8,'+encodeURIComponent(csv),
+    download:'bess_industrial_opportunities.csv'
+  });
+  a.click();
+});
+
+// — UI Events ────────────────────────────────────────────────────────────────────────────────
+document.getElementById('sel-minha').addEventListener('change',   applyFilters);
+document.getElementById('sel-province').addEventListener('change',applyFilters);
+document.getElementById('sel-sort').addEventListener('change',    applyFilters);
+document.getElementById('tog-inventory').addEventListener('change',()=>{
+  inventoryLayerGroup.clearLayers();
+  if(!document.getElementById('tog-inventory').checked) return;
+  const provFilter=document.getElementById('sel-province').value;
+  allEstates.filter(e=>!provFilter||e.province===provFilter).forEach(e=>{
+    const poly=makePoly(e,{fillColor:'#aaaaaa',fillOpacity:0.18,color:'#aaa',weight:1.0,pane:'inventoryPane'});
+    if(!poly) return;
+    if(!e.isOpportunity){
+      poly.bindTooltip(
+        `<div style="font-size:11px;font-weight:600;color:#ccc">${e.name}</div>`+
+        `<div style="font-size:9px;color:#666;margin-top:2px">${e.municipality} · ${e.netto.toFixed(1)} ha net · fully occupied</div>`,
+        {sticky:true,className:'map-tip',opacity:1});
+    }
+    poly.addTo(inventoryLayerGroup);
+  });
+});
+
+// — Boot ────────────────────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
