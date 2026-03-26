@@ -3,90 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Netherlands BESS Map — Alle TenneT Netstations</title>
+<title>Netherlands BESS Map — TenneT Stations + Wind op Zee + Zon</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Segoe UI',Arial,sans-serif; background:#0b1520; color:#dce8f4; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
-#header { background:linear-gradient(135deg,#0a1e30 0%,#122d48 100%); padding:10px 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #1a5a8a; flex-shrink:0; }
-#header h1 { font-size:15px; font-weight:700; color:#fff; }
-#header .sub { font-size:9px; color:#6aabcf; margin-top:2px; }
-.badge { background:#d44a30; color:#fff; font-size:9px; font-weight:800; padding:3px 10px; border-radius:10px; letter-spacing:0.6px; white-space:nowrap; }
+#header { background:linear-gradient(135deg,#0a1e30 0%,#122d48 100%); padding:9px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #1a5a8a; flex-shrink:0; }
+#header h1 { font-size:14px; font-weight:700; color:#fff; }
+#header .sub { font-size:9px; color:#6aabcf; margin-top:1px; }
+.badge { background:#d44a30; color:#fff; font-size:8px; font-weight:800; padding:2px 8px; border-radius:8px; white-space:nowrap; }
 #main { display:flex; flex:1; overflow:hidden; }
 #map { flex:1; }
-#sidebar { width:310px; background:#0a1824; display:flex; flex-direction:column; border-left:1px solid #14304a; flex-shrink:0; overflow:hidden; }
-.sb-section { padding:10px 13px; border-bottom:1px solid #14304a; flex-shrink:0; }
-.sb-section h3 { font-size:9px; font-weight:800; letter-spacing:1.3px; text-transform:uppercase; color:#4a9fd4; margin-bottom:7px; }
-.tog { display:flex; align-items:center; gap:8px; margin-bottom:4px; cursor:pointer; }
-.tog input { display:none; }
-.tslider { width:26px; height:13px; border-radius:7px; background:#1a3550; position:relative; transition:.2s; flex-shrink:0; }
-.tslider::after { content:''; width:9px; height:9px; border-radius:50%; background:#2a5575; position:absolute; top:2px; left:2px; transition:.2s; }
-.tog input:checked+.tslider { background:#1a6fa8; }
-.tog input:checked+.tslider::after { left:15px; background:#fff; }
-.tlabel { font-size:10px; color:#8ab4cc; }
-/* filter bar */
-#filter-bar { display:flex; gap:4px; flex-wrap:wrap; }
-.fbtn { font-size:9px; padding:2px 8px; border-radius:8px; border:1px solid; cursor:pointer; font-weight:700; background:transparent; transition:.15s; }
-.fbtn.active { color:#fff !important; }
-.fbtn-380 { border-color:#c0392b; color:#c0392b; }
-.fbtn-380.active { background:#c0392b; }
-.fbtn-220 { border-color:#8e44ad; color:#8e44ad; }
-.fbtn-220.active { background:#8e44ad; }
-.fbtn-150 { border-color:#2980b9; color:#2980b9; }
-.fbtn-150.active { background:#2980b9; }
-.fbtn-110 { border-color:#27ae60; color:#27ae60; }
-.fbtn-110.active { background:#27ae60; }
-.fbtn-plan { border-color:#d4ac0d; color:#d4ac0d; }
-.fbtn-plan.active { background:#d4ac0d; color:#000 !important; }
-/* search */
-#search-box { width:100%; padding:5px 9px; background:#061016; border:1px solid #1a3550; border-radius:5px; color:#cce4f8; font-size:11px; outline:none; }
+#sidebar { width:300px; background:#0a1824; display:flex; flex-direction:column; border-left:1px solid #14304a; flex-shrink:0; overflow:hidden; }
+.sb-section { padding:8px 12px; border-bottom:1px solid #14304a; flex-shrink:0; }
+.sb-section h3 { font-size:8px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#4a9fd4; margin-bottom:6px; }
+#search-box { width:100%; padding:4px 8px; background:#061016; border:1px solid #1a3550; border-radius:4px; color:#cce4f8; font-size:10px; outline:none; }
 #search-box::placeholder { color:#2a5a7a; }
-#ranking-list { flex:1; overflow-y:auto; padding:0; }
+#filter-bar { display:flex; gap:3px; flex-wrap:wrap; }
+.fbtn { font-size:8px; padding:2px 7px; border-radius:7px; border:1px solid; cursor:pointer; font-weight:700; background:transparent; transition:.15s; }
+.fbtn.active { color:#fff !important; }
+.fbtn-380 { border-color:#c0392b; color:#c0392b; } .fbtn-380.active { background:#c0392b; }
+.fbtn-220 { border-color:#8e44ad; color:#8e44ad; } .fbtn-220.active { background:#8e44ad; }
+.fbtn-150 { border-color:#2980b9; color:#2980b9; } .fbtn-150.active { background:#2980b9; }
+.fbtn-110 { border-color:#27ae60; color:#27ae60; } .fbtn-110.active { background:#27ae60; }
+.fbtn-plan { border-color:#d4ac0d; color:#d4ac0d; } .fbtn-plan.active { background:#d4ac0d; color:#000 !important; }
+.fbtn-wind { border-color:#00b4d8; color:#00b4d8; } .fbtn-wind.active { background:#00b4d8; color:#000 !important; }
+.fbtn-solar { border-color:#f9c74f; color:#f9c74f; } .fbtn-solar.active { background:#f9c74f; color:#000 !important; }
+.tog { display:flex; align-items:center; gap:6px; margin-bottom:3px; cursor:pointer; }
+.tog input { display:none; }
+.tslider { width:24px; height:12px; border-radius:6px; background:#1a3550; position:relative; transition:.2s; flex-shrink:0; }
+.tslider::after { content:''; width:8px; height:8px; border-radius:50%; background:#2a5575; position:absolute; top:2px; left:2px; transition:.2s; }
+.tog input:checked+.tslider { background:#1a6fa8; }
+.tog input:checked+.tslider::after { left:14px; background:#fff; }
+.tlabel { font-size:9px; color:#8ab4cc; }
+#ranking-list { flex:1; overflow-y:auto; }
 #ranking-list::-webkit-scrollbar { width:3px; }
 #ranking-list::-webkit-scrollbar-thumb { background:#1a3550; }
-.rank-item { display:flex; align-items:center; padding:6px 13px; border-bottom:1px solid #0f2338; cursor:pointer; transition:background .15s; }
+.rank-item { display:flex; align-items:center; padding:5px 12px; border-bottom:1px solid #0f2338; cursor:pointer; transition:background .15s; }
 .rank-item:hover { background:#0f2438; }
 .rank-item.active { background:#112a3a; border-left:3px solid #4ab8ff; }
-.rank-num { font-size:9px; font-weight:800; color:#2a5a7a; width:18px; flex-shrink:0; }
+.rank-num { font-size:9px; font-weight:800; color:#2a5a7a; width:16px; flex-shrink:0; }
 .rank-bar-wrap { flex:1; min-width:0; }
-.rank-name { font-size:10px; font-weight:700; color:#cce4f8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; }
-.rank-meta { font-size:9px; color:#4a7a9a; }
+.rank-name { font-size:10px; font-weight:700; color:#cce4f8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rank-meta { font-size:8px; color:#4a7a9a; }
 .rank-bar-bg { height:3px; background:#0d2233; border-radius:2px; margin-top:2px; }
 .rank-bar-fill { height:3px; border-radius:2px; }
-.rank-score { font-size:12px; font-weight:800; width:28px; text-align:right; flex-shrink:0; }
-.kv-pill { font-size:8px; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:4px; flex-shrink:0; }
-.kv-380 { background:#3a1010; color:#ff7070; }
-.kv-220 { background:#2a1040; color:#cc88ff; }
-.kv-150 { background:#0a2040; color:#70aaff; }
-.kv-110 { background:#0a2a18; color:#60dd90; }
-.kv-plan { background:#2a2000; color:#ffcc40; }
-#detail-panel { flex-shrink:0; background:#091520; border-top:1px solid #14304a; overflow-y:auto; max-height:40%; padding:11px 13px; }
+.rank-score { font-size:11px; font-weight:800; width:26px; text-align:right; flex-shrink:0; }
+.kv-pill { font-size:7px; font-weight:800; padding:1px 4px; border-radius:3px; margin-left:3px; flex-shrink:0; }
+.kv-380{background:#3a1010;color:#ff7070;}.kv-220{background:#2a1040;color:#cc88ff;}
+.kv-150{background:#0a2040;color:#70aaff;}.kv-110{background:#0a2a18;color:#60dd90;}
+.kv-plan{background:#2a2000;color:#ffcc40;}.kv-wind{background:#003a4a;color:#00d4ff;}
+.kv-solar{background:#2a2200;color:#ffdd44;}
+#detail-panel { flex-shrink:0; background:#091520; border-top:1px solid #14304a; overflow-y:auto; max-height:38%; padding:10px 12px; }
 #detail-panel::-webkit-scrollbar { width:3px; }
 #detail-panel::-webkit-scrollbar-thumb { background:#1a3550; }
-.dp-title { font-size:13px; font-weight:800; color:#fff; margin-bottom:2px; }
-.dp-kv { font-size:10px; color:#4a9fd4; margin-bottom:8px; }
-.dp-row { display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #0f2336; font-size:10px; }
+.dp-title { font-size:12px; font-weight:800; color:#fff; margin-bottom:2px; }
+.dp-kv { font-size:9px; color:#4a9fd4; margin-bottom:7px; }
+.dp-row { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #0f2336; font-size:9px; }
 .dp-row .lbl { color:#5a8aaa; }
 .dp-row .val { color:#c8e0f8; font-weight:600; }
-.dp-bar { margin:5px 0 2px; }
-.dp-bar-lbl { font-size:8px; color:#4a7a9a; text-transform:uppercase; letter-spacing:.7px; margin-bottom:2px; }
-.dp-bar-bg { background:#0a1e30; height:6px; border-radius:3px; }
-.dp-bar-fill { height:6px; border-radius:3px; }
-.dp-notes { margin-top:8px; font-size:9.5px; color:#6a9ab8; line-height:1.6; background:#070f18; padding:8px; border-radius:5px; border-left:3px solid #1a5a8a; }
+.dp-bar { margin:4px 0 2px; }
+.dp-bar-lbl { font-size:8px; color:#4a7a9a; text-transform:uppercase; letter-spacing:.6px; margin-bottom:2px; }
+.dp-bar-bg { background:#0a1e30; height:5px; border-radius:3px; }
+.dp-bar-fill { height:5px; border-radius:3px; }
+.dp-notes { margin-top:7px; font-size:9px; color:#6a9ab8; line-height:1.55; background:#070f18; padding:7px; border-radius:4px; border-left:3px solid #1a5a8a; }
 .dp-placeholder { font-size:10px; color:#2a5a7a; line-height:1.75; }
-.sbadge { display:inline-block; padding:1px 6px; border-radius:8px; font-size:8px; font-weight:800; margin-bottom:7px; }
-.s-crit { background:#5a1414; color:#ff8080; }
-.s-high { background:#4a2a00; color:#ffaa40; }
-.s-mh { background:#2a3a00; color:#c0e040; }
-.s-med { background:#003a28; color:#50e0a0; }
-.s-plan { background:#2a2a00; color:#ffee80; }
-#stats { background:#06111a; padding:5px 16px; display:flex; gap:20px; flex-wrap:wrap; border-top:1px solid #10283c; flex-shrink:0; }
+.sbadge { display:inline-block; padding:1px 5px; border-radius:7px; font-size:8px; font-weight:800; margin-bottom:6px; }
+.s-crit{background:#5a1414;color:#ff8080;}.s-high{background:#4a2a00;color:#ffaa40;}
+.s-mh{background:#2a3a00;color:#c0e040;}.s-med{background:#003a28;color:#50e0a0;}
+.s-wind{background:#003a4a;color:#00d4ff;}.s-solar{background:#2a2200;color:#ffdd44;}
+#stats { background:#06111a; padding:4px 14px; display:flex; gap:14px; flex-wrap:wrap; border-top:1px solid #10283c; flex-shrink:0; }
 .stat { text-align:center; }
-.sval { font-size:13px; font-weight:800; color:#4ab8ff; }
-.slbl { font-size:7px; color:#2a5a7a; letter-spacing:.8px; text-transform:uppercase; }
-.leg-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; font-size:9px; color:#7aaccc; }
-.leg-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.sval { font-size:12px; font-weight:800; color:#4ab8ff; }
+.slbl { font-size:7px; color:#2a5a7a; letter-spacing:.7px; text-transform:uppercase; }
 .leaflet-container { background:#0b1520; }
 .leaflet-control-zoom { border:1px solid #14304a !important; }
 .leaflet-control-zoom a { background:#0a1824 !important; color:#4ab8ff !important; border-color:#14304a !important; }
@@ -95,15 +85,15 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:#0b1520; color:#dce8f
 .leaflet-popup-tip { background:#091a2a; }
 .leaflet-popup-close-button { color:#4ab8ff !important; }
 .leaflet-tooltip { background:transparent !important; border:none !important; box-shadow:none !important; padding:0 !important; }
-.ctt { background:#091a2a; border:1px solid #1a5a8a; border-radius:6px; padding:6px 10px; font-size:10px; color:#cce4f8; min-width:130px; box-shadow:0 3px 12px rgba(0,0,0,.5); }
-.ctt strong { color:#fff; font-size:11px; display:block; margin-bottom:1px; }
+.ctt { background:#091a2a; border:1px solid #1a5a8a; border-radius:5px; padding:5px 9px; font-size:9px; color:#cce4f8; min-width:160px; box-shadow:0 3px 10px rgba(0,0,0,.5); }
+.ctt strong { color:#fff; font-size:10px; display:block; margin-bottom:1px; }
 </style>
 </head>
 <body>
 <div id="header">
   <div>
-    <h1>🇳🇱 Netherlands — BESS & TenneT Netstations Kaart</h1>
-    <div class="sub">Alle TenneT 110/150/220/380 kV stations · Congestie & BESS opportunity scoring · Bronnen: TenneT, Stedin, Enexis, Liander 2024–2025</div>
+    <h1>&#127475;&#127473; Netherlands — BESS Kaart: Netstations + Wind op Zee + Zonneparken</h1>
+    <div class="sub">TenneT 110–380 kV · Offshore wind (operationeel/gepland) · Grote zonneparken · Netaansluiting per project · Bronnen: TenneT, RVO, Rijksoverheid 2024–2025</div>
   </div>
   <div class="badge">BESS DEVELOPER TOOL</div>
 </div>
@@ -111,319 +101,361 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:#0b1520; color:#dce8f
   <div id="map"></div>
   <div id="sidebar">
     <div class="sb-section">
-      <h3>Zoek netstation</h3>
-      <input id="search-box" type="text" placeholder="Naam, provincie, kV...">
+      <h3>Zoek</h3>
+      <input id="search-box" type="text" placeholder="Naam, provincie, type...">
     </div>
     <div class="sb-section">
-      <h3>Filter op spanning</h3>
+      <h3>Filter op type</h3>
       <div id="filter-bar">
         <button class="fbtn fbtn-380 active" data-kv="380">380 kV</button>
         <button class="fbtn fbtn-220 active" data-kv="220">220 kV</button>
         <button class="fbtn fbtn-150 active" data-kv="150">150 kV</button>
         <button class="fbtn fbtn-110 active" data-kv="110">110 kV</button>
         <button class="fbtn fbtn-plan active" data-kv="plan">Gepland</button>
+        <button class="fbtn fbtn-wind active" data-kv="wind">&#128168; Offshore wind</button>
+        <button class="fbtn fbtn-solar active" data-kv="solar">&#9728; Zonneparken</button>
       </div>
     </div>
     <div class="sb-section">
       <h3>Lagen</h3>
-      <label class="tog"><input type="checkbox" id="tog-prov" checked><span class="tslider"></span><span class="tlabel">Provincie congestie (achtergrond)</span></label>
-      <label class="tog"><input type="checkbox" id="tog-ring" checked><span class="tslider"></span><span class="tlabel">Congestie-ringen (flex MW)</span></label>
+      <label class="tog"><input type="checkbox" id="tog-prov" checked><span class="tslider"></span><span class="tlabel">Provincie congestie</span></label>
+      <label class="tog"><input type="checkbox" id="tog-ring" checked><span class="tslider"></span><span class="tlabel">Congestie-ringen</span></label>
     </div>
-    <div class="sb-section" style="padding-bottom:4px">
-      <h3>Stations gerangschikt op BESS score ↓</h3>
-    </div>
+    <div class="sb-section" style="padding-bottom:3px"><h3>Gerangschikt op BESS score &#8595;</h3></div>
     <div id="ranking-list"></div>
-    <div id="detail-panel">
-      <div class="dp-placeholder">← Klik een station op de kaart of in de lijst voor volledige congestie-analyse en BESS opportunity.</div>
-    </div>
+    <div id="detail-panel"><div class="dp-placeholder">&#8592; Klik een item voor volledige analyse en BESS opportunity.</div></div>
   </div>
 </div>
 <div id="stats">
-  <div class="stat"><div class="sval" id="stat-total">—</div><div class="slbl">Stations totaal</div></div>
-  <div class="stat"><div class="sval" id="stat-380">—</div><div class="slbl">380 kV</div></div>
-  <div class="stat"><div class="sval" id="stat-220">—</div><div class="slbl">220 kV</div></div>
-  <div class="stat"><div class="sval" id="stat-150">—</div><div class="slbl">150 kV</div></div>
-  <div class="stat"><div class="sval" id="stat-110">—</div><div class="slbl">110 kV</div></div>
-  <div class="stat"><div class="sval" id="stat-plan">—</div><div class="slbl">Gepland/aanbouw</div></div>
+  <div class="stat"><div class="sval" id="stat-total">—</div><div class="slbl">Totaal</div></div>
+  <div class="stat"><div class="sval" id="stat-380">—</div><div class="slbl">380kV</div></div>
+  <div class="stat"><div class="sval" id="stat-150">—</div><div class="slbl">150kV</div></div>
+  <div class="stat"><div class="sval" id="stat-plan">—</div><div class="slbl">Gepland</div></div>
+  <div class="stat"><div class="sval" id="stat-wind">—</div><div class="slbl">Offshore wind</div></div>
+  <div class="stat"><div class="sval" id="stat-solar">—</div><div class="slbl">Zonneparken</div></div>
+  <div class="stat"><div class="sval">21 GW</div><div class="slbl">Doel 2031</div></div>
 </div>
 <script>
-// ═══════════════════════════════════════════════════════════════
-// ALLE TENNET NETSTATIONS — 110/150/220/380 kV + geplande stations
-// status: 'operational' | 'planned' | 'construction'
-// ═══════════════════════════════════════════════════════════════
-const STATIONS = [
-  // ─── 380 kV bestaand ────────────────────────────────────────
-  {id:'eindhoven',name:'Eindhoven',kv:380,lat:51.440,lng:5.470,province:'Noord-Brabant',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:1400,overload_mw:220,relief_year:2027,flex_demand_mw:500,severity:'CRITICAL',notes:'Snelst groeiende vraagzone NL. ASML + Brainport. Wachtlijst enorm. Nieuwe Tilburg 380kV + Geertruidenberg transformers geven gedeeltelijke verlichting in 2027.'},
-  {id:'maasbracht',name:'Maasbracht',kv:380,lat:51.154,lng:5.893,province:'Limburg',status:'operational',congestion_score:6,bess_score:7,waiting_list_mw:200,overload_mw:50,relief_year:2028,flex_demand_mw:220,severity:'MEDIUM-HIGH',notes:'Groot 380/150kV station in renovatie. 3 TenneT projecten: stationsrenovatie, Maasbracht–Graetheide 380kV, Maasbracht–Einighausen upgrade. Grensoverschrijdend koppelpunt met België en Duitsland.'},
-  {id:'diemen',name:'Diemen',kv:380,lat:52.348,lng:4.979,province:'Noord-Holland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:700,overload_mw:150,relief_year:2029,flex_demand_mw:450,severity:'CRITICAL',notes:'Eén van vier TenneT deelnetten voor Amsterdam. Serveert Amsterdam Oost/Zuidoost. Nieuw A9-Zuid 380kV station gepland in Haarlemmermeer voor verlichting.'},
-  {id:'krimpen',name:'Krimpen a/d IJssel',kv:380,lat:51.921,lng:4.617,province:'Zuid-Holland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:800,overload_mw:120,relief_year:2028,flex_demand_mw:400,severity:'CRITICAL',notes:'Nieuwe transformatoren in aanleg. Geheel Zuid-Holland congestie verklaard dec 2024. Geen nieuwe grote afnemers tot ~2028.'},
-  {id:'geertruidenberg',name:'Geertruidenberg',kv:380,lat:51.700,lng:4.850,province:'Noord-Brabant',status:'operational',congestion_score:8,bess_score:9,waiting_list_mw:1200,overload_mw:190,relief_year:2027,flex_demand_mw:450,severity:'CRITICAL',notes:'Extra transformator 2026: +200 MW. Tweede transformator + Tilburg 380kV in 2027: +405 MW. TenneT congestiebeheer = 1.700 MW Brabant/Limburg. Toekomstig HVDC converterstation 2031.'},
-  {id:'dodewaard',name:'Dodewaard',kv:380,lat:51.893,lng:5.653,province:'Gelderland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:2250,overload_mw:250,relief_year:2033,flex_demand_mw:600,severity:'CRITICAL',notes:'5.600 MW gecontracteerd vs 3.350 MW beschikbaar (samen met Doetinchem/Lelystad). Alle 150kV stations Gelderland+Flevoland congestie. Extra transformator vertraagd naar 2029-2033. Zeer lang BESS revenue window.'},
-  {id:'ens',name:'Ens',kv:380,lat:52.638,lng:5.668,province:'Flevoland',status:'operational',congestion_score:7,bess_score:8,waiting_list_mw:420,overload_mw:80,relief_year:2029,flex_demand_mw:320,severity:'HIGH',notes:'380kV hub Noordoostpolder — een van NL\'s grootste wind/zonnegebieden. 880 MW invoedbeperkingen via Enexis. Vierverlaten–Ens 380kV onderzoek (NRD jan 2024). Tot ~2029 invoedbeperkingen.'},
-  {id:'maasvlakte',name:'Maasvlakte',kv:380,lat:51.956,lng:4.016,province:'Zuid-Holland',status:'operational',congestion_score:10,bess_score:10,waiting_list_mw:2068,overload_mw:244,relief_year:2030,flex_demand_mw:600,severity:'CRITICAL',notes:'Hoogste congestie NL. Wachtlijst 5× gegroeid: 426 MW (2023) → 2.068 MW (2025). Overbelasting: 31 MW (2026) → 244 MW (2029). Haven electrificatie + H2. Geen nieuwe aanvragen. Top BESS target.'},
-  {id:'borssele',name:'Borssele',kv:380,lat:51.422,lng:3.730,province:'Zeeland',status:'operational',congestion_score:6,bess_score:8,waiting_list_mw:300,overload_mw:60,relief_year:2026,flex_demand_mw:300,severity:'MEDIUM-HIGH',notes:'Borssele I–IV offshore wind (1,5 GW) + kerncentrale. Flex contract Air Liquide 50–100 MW. Invoedbeperkingen bij hoog wind + lage vraag.'},
-  {id:'langerak',name:'Langerak (Doetinchem)',kv:380,lat:51.967,lng:6.295,province:'Gelderland',status:'operational',congestion_score:9,bess_score:8,waiting_list_mw:900,overload_mw:160,relief_year:2033,flex_demand_mw:400,severity:'CRITICAL',notes:'Onderdeel Gelderland overload driehoek (Dodewaard–Doetinchem–Lelystad). 5.600 MW gecontracteerd vs 3.350 MW beschikbaar. 380kV Dodewaard–Doetinchem upgrade lopend.'},
-  {id:'lelystad',name:'Lelystad',kv:380,lat:52.520,lng:5.465,province:'Flevoland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:700,overload_mw:130,relief_year:2031,flex_demand_mw:420,severity:'CRITICAL',notes:'Eén van drie knelpuntstations (5.600 MW vs 3.350 MW beschikbaar). Uitbreidingsproject Larserringweg lopend. Structurele verlichting niet voor 2031.'},
-  {id:'hengelo',name:'Hengelo',kv:380,lat:52.270,lng:6.800,province:'Overijssel',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:350,overload_mw:80,relief_year:2031,flex_demand_mw:200,severity:'HIGH',notes:'Industrieel Twente (Akzo Nobel, Thales, Nedstaal). Herkalibratie dec 2025: aanhoudende overbelasting. Geen extra capaciteit gevonden in 2024.'},
-  {id:'bleiswijk',name:'Bleiswijk',kv:380,lat:51.988,lng:4.538,province:'Zuid-Holland',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:420,overload_mw:80,relief_year:2027,flex_demand_mw:300,severity:'CRITICAL',notes:'Deel Randstad 380kV ring. TenneT bouwt nieuw 150kV station + ondergrondse kabel naar Zevenhuizen/Zuidplaspolder (~7 km A12). Oplevering ~2027. Tot dan volledig congestie.'},
-  {id:'wateringen',name:'Wateringen',kv:380,lat:52.026,lng:4.262,province:'Zuid-Holland',status:'operational',congestion_score:9,bess_score:8,waiting_list_mw:550,overload_mw:100,relief_year:2029,flex_demand_mw:380,severity:'CRITICAL',notes:'Deel Randstad 380kV ring (Beverwijk–Bleiswijk–Wateringen). Serveert Den Haag, Westland tuinbouwcluster. Volledig in congestiezone Zuid-Holland dec 2024.'},
-  {id:'crayestein',name:'Crayestein (Dordrecht)',kv:380,lat:51.803,lng:4.692,province:'Zuid-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:300,overload_mw:65,relief_year:2028,flex_demand_mw:240,severity:'HIGH',notes:'380kV station voor Dordrecht/Hoekse Waard regio. Deel Zuid-Holland congestiezone. Industrie + logistiek. Geertruidenberg–Krimpen versterking loopt via dit knooppunt.'},
-  {id:'eemshaven',name:'Eemshaven',kv:380,lat:53.433,lng:6.837,province:'Groningen',status:'operational',congestion_score:9,bess_score:10,waiting_list_mw:1100,overload_mw:200,relief_year:2032,flex_demand_mw:700,severity:'CRITICAL',notes:'NL\'s primaire offshore wind landingsplaats. 136 MW invoedruimte (dec 2025). Datacenter explosie (Google, Microsoft). TenneT investeert ~€500M t/m 2035. GIGA Leopard precedent bewijst BESS model.'},
-  {id:'delfzijl',name:'Delfzijl / Weiwerd',kv:380,lat:53.315,lng:6.900,province:'Groningen',status:'operational',congestion_score:9,bess_score:10,waiting_list_mw:800,overload_mw:170,relief_year:2032,flex_demand_mw:600,severity:'CRITICAL',notes:'GIGA Leopard 300 MW BESS (GIGA Storage/TenneT) — NL\'s eerste tijdgebonden directe HV aansluitcontract. Financiering jun 2025, operationeel ~2027. Industrieel cluster (Nouryon, Dow). H2 transitie.'},
-  {id:'meeden',name:'Meeden',kv:380,lat:53.091,lng:6.927,province:'Groningen',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:400,overload_mw:100,relief_year:2032,flex_demand_mw:350,severity:'CRITICAL',notes:'Centraal Groningen invoedbeperkingszone. Wachtlijst Musselkanaal/Groningen-Oost tot 2032+. Grote solar/wind pijplijn.'},
-  {id:'vierverlaten',name:'Vierverlaten',kv:380,lat:53.162,lng:6.490,province:'Groningen',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:380,overload_mw:90,relief_year:2029,flex_demand_mw:320,severity:'CRITICAL',notes:'Eemshaven–Vierverlaten 380kV in gebruik zomer 2023. Nu onderwerp nieuw Vierverlaten–Ens 380kV onderzoek (NRD jan 2024). Invoedbeperkingen tot Vierverlaten–Ens gereed (~2029+).'},
-  {id:'beverwijk',name:'Beverwijk / Wijk aan Zee',kv:380,lat:52.493,lng:4.655,province:'Noord-Holland',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:400,overload_mw:100,relief_year:2027,flex_demand_mw:300,severity:'CRITICAL',notes:'Noord van Noordzeekanaal bereikte max invoedcapaciteit sep 2024. Nieuw Beverwijk 380kV station + Velsen–Beverwijk–Oterleek 380kV verbinding klaar 2027. Tata Steel + IJmuiden Ver offshore wind landing.'},
-  {id:'boxmeer',name:'Boxmeer',kv:380,lat:51.645,lng:5.945,province:'Noord-Brabant',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:40,relief_year:2030,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'380kV station Noord-Oost Brabant. Agrarische industrie + groeiende logistiek. Onderdeel Brabant congestiezone. Zonder Wijchen station: bedrijven wachten tot 2033-2036.'},
-  {id:'arnhem',name:'Arnhem',kv:380,lat:51.985,lng:5.909,province:'Gelderland',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:600,overload_mw:110,relief_year:2031,flex_demand_mw:300,severity:'CRITICAL',notes:'Gelderland\'s hoofd 380kV hub. TenneT HQ. Vitens water, Rijnstate, zware industrie. Alle omliggende 150kV stations congestie. BESS direct TenneT contractkans.'},
-  {id:'rilland',name:'Rilland',kv:380,lat:51.424,lng:4.141,province:'Zeeland',status:'operational',congestion_score:5,bess_score:7,waiting_list_mw:200,overload_mw:40,relief_year:2026,flex_demand_mw:250,severity:'MEDIUM',notes:'Nieuw 380kV eindpunt Borssele offshore wind verbinding. Terneuzen chemisch cluster. Groeiende invoedbeperkingen naarmate meer offshore wind op Zeeland wateren.'},
-  {id:'breukelen',name:'Breukelen-Kortrijk',kv:380,lat:52.168,lng:5.004,province:'Utrecht',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:400,overload_mw:80,relief_year:2029,flex_demand_mw:280,severity:'CRITICAL',notes:'Volledig TenneT 380/150kV station — knelpunt voor Utrecht, Gelderland EN Flevoland. Eén van vier stations die transformator nodig hebben voor oplossen 5.600 MW vs 3.350 MW overbelasting. Bouw start begin 2025.'},
-  {id:'maasvlakte2',name:'Maasvlakte (Amaliahaven)',kv:380,lat:51.959,lng:4.020,province:'Zuid-Holland',status:'construction',congestion_score:8,bess_score:9,waiting_list_mw:600,overload_mw:100,relief_year:2027,flex_demand_mw:400,severity:'CRITICAL',notes:'Nieuw 380kV station Amaliahaven (Maasvlakte) in aanbouw, oplevering 2027. Onderdeel groot uitbreidingsprogramma havengebied Rotterdam. Deelnet splitsing voor betere capaciteitsverdeling.'},
-
-  // ─── 220 kV ─────────────────────────────────────────────────
-  {id:'eemshaven220',name:'Eemshaven (220kV / HKN)',kv:220,lat:53.436,lng:6.840,province:'Groningen',status:'operational',congestion_score:8,bess_score:9,waiting_list_mw:500,overload_mw:120,relief_year:2032,flex_demand_mw:400,severity:'CRITICAL',notes:'220kV aansluitpunt Hollandse Kust Noord offshore wind + Gemini. Invoedcongestie ondanks nieuwe Eemshaven–Vierverlaten verbinding. BESS voor invoedpiekopvang.'},
-  {id:'vierverlaten220',name:'Vierverlaten (220kV)',kv:220,lat:53.160,lng:6.488,province:'Groningen',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:280,overload_mw:60,relief_year:2029,flex_demand_mw:220,severity:'HIGH',notes:'220kV onderdeel Vierverlaten hub. Groningen wind corridor noord-zuidverbinding. Invoedbeperkingen tot Vierverlaten–Ens klaar.'},
-  {id:'meeden220',name:'Meeden (220kV)',kv:220,lat:53.093,lng:6.930,province:'Groningen',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:250,overload_mw:55,relief_year:2032,flex_demand_mw:200,severity:'HIGH',notes:'220kV schakelpunt Groningen centraal. Groot solar/wind park gebied. Enexis invoedbeperkingen via limitatiecontracten.'},
-  {id:'beverwijk220',name:'Beverwijk (220kV / offshore)',kv:220,lat:52.496,lng:4.652,province:'Noord-Holland',status:'operational',congestion_score:7,bess_score:8,waiting_list_mw:320,overload_mw:75,relief_year:2027,flex_demand_mw:280,severity:'HIGH',notes:'220kV aanlandpunt Hollandse Kust Noord offshore windpark. Gecombineerd met nieuw 380kV Beverwijk station voor Velsen–Oterleek verbinding.'},
-  {id:'borssele_hvdc',name:'Borssele (HVDC / IJmuiden Ver α)',kv:220,lat:51.419,lng:3.726,province:'Zeeland',status:'construction',congestion_score:6,bess_score:8,waiting_list_mw:200,overload_mw:40,relief_year:2029,flex_demand_mw:350,severity:'MEDIUM-HIGH',notes:'525kV DC converterstation IJmuiden Ver Alpha in aanbouw, oplevering 2028-2029. 2 GW offshore wind aanlanding. Gecombineerd met bestaand 380kV Borssele station. Grote BESS kans naast DC-converter voor balancering.'},
-
-  // ─── 150 kV bestaand ────────────────────────────────────────
-  {id:'lageweide',name:'Utrecht (Lage Weide)',kv:150,lat:52.105,lng:5.060,province:'Utrecht',status:'operational',congestion_score:7,bess_score:8,waiting_list_mw:281,overload_mw:60,relief_year:2033,flex_demand_mw:320,severity:'HIGH',notes:'250 MW capaciteittekort verwacht 2026-2029. TenneT/Stedin roept om 320 MW flexibiliteit tot 2033. Wachtlijst 1.156 afnameaanvragen + 444 invoedaanvragen.'},
-  {id:'europoort150',name:'Europoort (150kV)',kv:150,lat:51.942,lng:4.047,province:'Zuid-Holland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:1200,overload_mw:180,relief_year:2032,flex_demand_mw:500,severity:'CRITICAL',notes:'Bestaand 150kV station vervangen door nieuw (start najaar 2024, oplevering medio 2026). H2/elektrolyse projecten Rotterdam haven. Nieuw 380kV station Europoort gepland. Wachtlijst loopt samen met Maasvlakte.'},
-  {id:'oostzaan',name:'Oostzaan',kv:150,lat:52.426,lng:4.883,province:'Noord-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:320,overload_mw:70,relief_year:2027,flex_demand_mw:200,severity:'HIGH',notes:'Serveert Amsterdam Noord, Oost, Centrum, West, havengebied. Wachtlijst deels opgelost. Structureel begrensd tot 2027 uitbreidingen.'},
-  {id:'hertogenbosch',name:"'s-Hertogenbosch",kv:150,lat:51.686,lng:5.307,province:'Noord-Brabant',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:500,overload_mw:90,relief_year:2033,flex_demand_mw:250,severity:'HIGH',notes:'Den Bosch Noord congestiezone. Enexis congestieonderzoek gepubliceerd. Bedrijventerreinen, logistiek, woningbouw. Enexis flex tender 2026+.'},
-  {id:'zwolle',name:'Zwolle',kv:150,lat:52.510,lng:6.090,province:'Overijssel',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:220,overload_mw:50,relief_year:2030,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'Regionaal knooppunt Overijssel/Flevoland grenszone. Groeiende industrie + logistiek. Kruisverbinding met Flevoland windzones. DSO flex tender Enexis.'},
-  {id:'assen',name:'Assen',kv:150,lat:52.990,lng:6.563,province:'Drenthe',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:200,overload_mw:45,relief_year:2030,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'Geen extra capaciteit gevonden Enexis 2024. Nieuwe distributieposten in Ter Apelkanaal, Veenoord, Emmen in aanbouw. Agrarische electrificatie + solar invoed.'},
-  {id:'leeuwarden',name:'Leeuwarden',kv:150,lat:53.200,lng:5.799,province:'Friesland',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:150,overload_mw:30,relief_year:2027,flex_demand_mw:130,severity:'MEDIUM',notes:'880 MW via Enexis limitatiecontracten Friesland/Flevoland/Groningen corridor. Windzone groeiende solar. Minder acuut dan west/oost. BESS voor wind balancering en DSO flex tenders.'},
-  {id:'maastricht',name:'Maastricht',kv:150,lat:50.875,lng:5.720,province:'Limburg',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:300,overload_mw:55,relief_year:2029,flex_demand_mw:200,severity:'MEDIUM-HIGH',notes:'Onderdeel 1.700 MW Brabant/Limburg TenneT congestiebeheer. Chemelot (DSM, OCI). Grensoverschrijdende stromen met België/Duitsland. BESS voor congestie + grensarbitrage.'},
-  {id:'venlo',name:'Venlo',kv:150,lat:51.370,lng:6.175,province:'Limburg',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:180,overload_mw:35,relief_year:2028,flex_demand_mw:120,severity:'MEDIUM',notes:'Groot logistiek knooppunt (Amazon, DHL, DB Schenker). EV laden zware logistiek vloot = groeiende last. Grensoverschrijdend Duitsland. Pre-development BESS kans.'},
-  {id:'amsterdam_noord',name:'Amsterdam-Noord (150kV)',kv:150,lat:52.388,lng:4.908,province:'Noord-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:280,overload_mw:60,relief_year:2028,flex_demand_mw:200,severity:'HIGH',notes:'150kV verdeelstation Noord Amsterdam. Serveert haven Westpoort + groeiende woon/werkgebieden. Onderdeel Noord-Holland congestiezone. Liander managing wachtlijst.'},
-  {id:'ijmuiden',name:'IJmuiden',kv:150,lat:52.466,lng:4.610,province:'Noord-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:260,overload_mw:55,relief_year:2027,flex_demand_mw:180,severity:'HIGH',notes:'150kV voor Tata Steel + IJmond industrie. Gekoppeld aan Beverwijk 380kV invoedpunten. Invoedbeperkingen Noord Noordzeekanaal tot 2027.'},
-  {id:'geleen',name:'Geleen / Sittard',kv:150,lat:50.975,lng:5.837,province:'Limburg',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:220,overload_mw:45,relief_year:2028,flex_demand_mw:160,severity:'MEDIUM-HIGH',notes:'150kV voeding Chemelot industriecomplex zijde. DSM, OCI, LyondellBasell, Sabic. Groeiende industriele electrificatievraag. Maasbracht–Graetheide 380kV verlichting gepland.'},
-  {id:'nijmegen',name:'Nijmegen',kv:150,lat:51.842,lng:5.853,province:'Gelderland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:300,overload_mw:65,relief_year:2033,flex_demand_mw:200,severity:'HIGH',notes:'150kV regionaal station Nijmegen. Groeiende universiteitscampus + Novio Tech industriepark. Onderdeel Gelderland congestiezone. Verwacht op Wijchen station voor verlichting.'},
-  {id:'apeldoorn',name:'Apeldoorn',kv:150,lat:52.213,lng:5.971,province:'Gelderland',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:200,overload_mw:40,relief_year:2031,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'150kV Veluwe regio. IT-bedrijven + overheid. Gelderland congestiegebied. Afhankelijk van Dodewaard/Arnhem ontlasting voor structurele verlichting.'},
-  {id:'deventer',name:'Deventer',kv:150,lat:52.255,lng:6.158,province:'Overijssel',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:150,overload_mw:30,relief_year:2030,flex_demand_mw:120,severity:'MEDIUM',notes:'150kV IJssel-regio. Industrie + agrarisch. Groeiende afname door electrificatie verwarming. Enexis capaciteitskaart: beperkte buffer.'},
-  {id:'goes',name:'Goes',kv:150,lat:51.503,lng:3.889,province:'Zeeland',status:'operational',congestion_score:4,bess_score:5,waiting_list_mw:100,overload_mw:20,relief_year:2026,flex_demand_mw:80,severity:'MEDIUM',notes:'150kV Zeeland binnenland. Agrarisch + industrie. Relatief beperkte congestie. Onderdeel Borssele offshore wind distributieketen.'},
-  {id:'roosendaal',name:'Roosendaal / Bergen op Zoom',kv:150,lat:51.530,lng:4.463,province:'Noord-Brabant',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:200,overload_mw:45,relief_year:2029,flex_demand_mw:160,severity:'MEDIUM-HIGH',notes:'150kV West-Brabant. Onderdeel Brabant congestiezone. Logistiek + industrie A58 corridor. Nieuw Halsteren/Bergen op Zoom 150kV station gepland 2028.'},
-  {id:'tilburg150',name:'Tilburg (150kV)',kv:150,lat:51.557,lng:5.086,province:'Noord-Brabant',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:400,overload_mw:80,relief_year:2027,flex_demand_mw:200,severity:'HIGH',notes:'Bestaand 150kV station Tilburg. Nieuw 380kV De Spinder station in aanbouw (oplevering ~2027) geeft +405 MW in Oost/Zuid Brabant. Tot dan volledig congestie.'},
-  {id:'den_haag',name:'Den Haag (150kV)',kv:150,lat:52.076,lng:4.311,province:'Zuid-Holland',status:'operational',congestion_score:8,bess_score:7,waiting_list_mw:350,overload_mw:70,relief_year:2029,flex_demand_mw:240,severity:'CRITICAL',notes:'Stedin congestie Den Haag omstreken aangemeld mrt 2025. Serveert regeringscentrum + woningbouw. Wateringen 380kV knooppunt. Structurele verlichting niet voor 2029.'},
-  {id:'dordrecht',name:'Dordrecht',kv:150,lat:51.807,lng:4.666,province:'Zuid-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:280,overload_mw:55,relief_year:2028,flex_demand_mw:180,severity:'HIGH',notes:'150kV Dordrecht regio. Industrie + scheepvaart. Onderdeel Zuid-Holland congestiezone. Crayestein 380kV knooppunt voor structurele verlichting.'},
-  {id:'alphen',name:'Alphen a/d Rijn',kv:150,lat:52.130,lng:4.657,province:'Zuid-Holland',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:35,relief_year:2028,flex_demand_mw:130,severity:'MEDIUM-HIGH',notes:'150kV Midden-Holland. Woningbouw Rijnland. Onderdeel Zuid-Holland congestie zone. Stedin managing wachtlijst.'},
-  {id:'leiden',name:'Leiden',kv:150,lat:52.160,lng:4.495,province:'Zuid-Holland',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:200,overload_mw:40,relief_year:2028,flex_demand_mw:140,severity:'MEDIUM-HIGH',notes:'150kV Leiden regio. Universiteit + bioscience cluster. Groeiende kenniseconomie electrificatie. Onderdeel Zuid-Holland congestiezone.'},
-  {id:'rotterdam_south',name:'Rotterdam-Zuid (150kV)',kv:150,lat:51.893,lng:4.480,province:'Zuid-Holland',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:500,overload_mw:90,relief_year:2030,flex_demand_mw:280,severity:'CRITICAL',notes:'150kV distributie Rotterdam-Zuid + Botlek. Petrochemische industrie. Onderdeel Rotterdam havenprogramma. Aanvullende capaciteit nodig naast nieuw Europoort en Maasvlakte stations.'},
-  {id:'groningen_city',name:'Groningen (stad)',kv:150,lat:53.220,lng:6.568,province:'Groningen',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:35,relief_year:2030,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'150kV regionaal Groningen centrum. Datacenter groei + woningbouw. Enexis managing. Onderdeel bredere Groningen congestiezone die loopt t/m 2032.'},
-  {id:'leeuwarden150',name:'Leeuwarden (150kV)',kv:150,lat:53.202,lng:5.797,province:'Friesland',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:120,overload_mw:25,relief_year:2027,flex_demand_mw:100,severity:'MEDIUM',notes:'150kV verdeelstation Friesland hoofdstad. Windzone. Enexis limitatiecontracten. Relatief beheersbaar.'},
-  {id:'emmen',name:'Emmen',kv:150,lat:52.787,lng:6.902,province:'Drenthe',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:140,overload_mw:28,relief_year:2029,flex_demand_mw:110,severity:'MEDIUM',notes:'150kV Drenthe. Agrarisch + industrie. Enexis nieuw distributiestation Veenoord in aanbouw. Groeiende solar feed-in.'},
-  {id:'zutphen',name:'Zutphen',kv:150,lat:52.138,lng:6.197,province:'Gelderland',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:120,overload_mw:25,relief_year:2031,flex_demand_mw:100,severity:'MEDIUM',notes:'150kV Achterhoek. Groeiende vraag door industrie electrificatie. Onderdeel Gelderland congestiegebied maar aan de rand.'},
-  {id:'purmerend',name:'Purmerend / Zaandam',kv:150,lat:52.504,lng:4.960,province:'Noord-Holland',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:38,relief_year:2028,flex_demand_mw:140,severity:'MEDIUM-HIGH',notes:'150kV Noord Amsterdam regio. Zaanstreek industrie. Woningbouw. Onderdeel Noord-Holland congestiezone. Liander wachtlijst.'},
-  {id:'alkmaar',name:'Alkmaar',kv:150,lat:52.632,lng:4.746,province:'Noord-Holland',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:160,overload_mw:32,relief_year:2028,flex_demand_mw:130,severity:'MEDIUM-HIGH',notes:'150kV West-Friesland. Tuinbouw + voedingsindustrie. Onderdeel Noord-Holland congestiegebied. Liander capaciteitsupdate.'},
-  {id:'almere',name:'Almere',kv:150,lat:52.375,lng:5.220,province:'Flevoland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:250,overload_mw:50,relief_year:2030,flex_demand_mw:180,severity:'HIGH',notes:'150kV snelst groeiende stad NL. Woningbouw + light industry. Onderdeel Flevoland congestiegebied (5.600 MW vs 3.350 MW cluster). Lelystad 380kV knelpunt.'},
-  {id:'den_haag_west',name:'Den Haag West / Wateringen',kv:150,lat:52.035,lng:4.273,province:'Zuid-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:250,overload_mw:48,relief_year:2029,flex_demand_mw:170,severity:'HIGH',notes:'150kV Westland tuinbouw regio. Enorme electrificatievraag tuinbouw + warmtepompen. Onderdeel Stedin congestie Zuid-Holland. Wateringen 380kV.'},
-
-  // ─── 110 kV (noordoost NL) ──────────────────────────────────
-  {id:'hengelo110',name:'Hengelo (110kV)',kv:110,lat:52.268,lng:6.798,province:'Overijssel',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:38,relief_year:2031,flex_demand_mw:130,severity:'MEDIUM-HIGH',notes:'110kV verdeelstation Twente industrie. Enexis regio. Oudste TenneT 110kV gebied NL. Groeiende industriële electrificatievraag.'},
-  {id:'ter_apelkanaal',name:'Ter Apelkanaal / Musselkanaal',kv:110,lat:52.883,lng:7.053,province:'Groningen',status:'construction',congestion_score:6,bess_score:7,waiting_list_mw:160,overload_mw:35,relief_year:2027,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'Nieuw 110kV station in aanbouw, oplevering 2027. Groningen Oost solar/wind zone. Enexis congestieoplossing voor Musselkanaal deelnet. Pre-development BESS kans.'},
-  {id:'veenoord',name:'Veenoord',kv:110,lat:52.748,lng:6.823,province:'Drenthe',status:'construction',congestion_score:5,bess_score:5,waiting_list_mw:120,overload_mw:25,relief_year:2029,flex_demand_mw:90,severity:'MEDIUM',notes:'Nieuw 110kV distributiestation Veenoord in aanbouw, oplevering 2029. Drenthe solar explosie. Enexis capaciteitsoplossing.'},
-  {id:'enschede',name:'Enschede',kv:110,lat:52.219,lng:6.893,province:'Overijssel',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:130,overload_mw:26,relief_year:2031,flex_demand_mw:100,severity:'MEDIUM',notes:'110kV Twente. Universiteit + tech industrie. Enexis regio. Grensoverschrijdend met Duitsland (110kV koppeling).'},
-  {id:'coevorden',name:'Coevorden',kv:110,lat:52.664,lng:6.743,province:'Drenthe',status:'operational',congestion_score:4,bess_score:4,waiting_list_mw:80,overload_mw:15,relief_year:2030,flex_demand_mw:80,severity:'MEDIUM',notes:'110kV Drenthe/Overijssel grens. Logistiek knooppunt. Agrarisch gebied. Relatief beperkte congestie. Enexis distributie.'},
-
-  // ─── Geplande/toekomstige stations ──────────────────────────
-  {id:'tilburg_new',name:'Tilburg (nieuw 380kV)',kv:380,lat:51.565,lng:5.089,province:'Noord-Brabant',status:'construction',congestion_score:8,bess_score:9,waiting_list_mw:900,overload_mw:140,relief_year:2027,flex_demand_mw:350,severity:'CRITICAL',notes:'Nieuw 380kV station De Spinder in aanbouw. Oplevering +405 MW Oost/Zuid Brabant ~2027. Tot dan volledig congestie Tilburg/Waalwijk. Ground-floor BESS kans: aanvraag vóór ingebruikname.'},
-  {id:'wijchen',name:'Wijchen (nieuw 380kV)',kv:380,lat:51.812,lng:5.731,province:'Gelderland',status:'planned',congestion_score:8,bess_score:9,waiting_list_mw:800,overload_mw:150,relief_year:2033,flex_demand_mw:350,severity:'CRITICAL',notes:'Gepland nieuw 380kV station Wijchen. Zonder dit station: bedrijven NE Brabant wachten tot 2033-2036. Langste congestieduur NL = maximaal BESS revenue window.'},
-  {id:'middenmeer',name:'Middenmeer (nieuw 380kV)',kv:380,lat:52.800,lng:4.991,province:'Noord-Holland',status:'planned',congestion_score:7,bess_score:8,waiting_list_mw:280,overload_mw:80,relief_year:2028,flex_demand_mw:250,severity:'HIGH',notes:'Gepland nieuw 380kV station Noord-Holland Noord. Connects Middenmeer windzone + toekomstige offshore wind aanlanding. TenneT plant 2 nieuwe 380kV stations NHN.'},
-  {id:'vijfhuizen',name:'Vijfhuizen / A9-Zuid (nieuw 380kV)',kv:380,lat:52.341,lng:4.700,province:'Noord-Holland',status:'planned',congestion_score:9,bess_score:8,waiting_list_mw:550,overload_mw:130,relief_year:2029,flex_demand_mw:350,severity:'CRITICAL',notes:'Nieuw A9-Zuid 380kV station gepland in Haarlemmermeer ter verlichting Diemen/Vijfhuizen. Locatiebeslissing vroeg 2026. Verlichting vroegst 2029. Pre-development BESS kans vóór ingebruikname.'},
-  {id:'utrecht_noord',name:'Utrecht-Noord / Haarrijn (nieuw 380kV)',kv:380,lat:52.088,lng:5.012,province:'Utrecht',status:'planned',congestion_score:7,bess_score:7,waiting_list_mw:250,overload_mw:50,relief_year:2030,flex_demand_mw:220,severity:'HIGH',notes:'Nieuw 380kV station Haarrijn Utrecht. Provincie Utrecht keurde locatie goed 11 nov 2025. Verbinding via Lage Weide en Breukelen-Kortrijk. Verlichting 250 MW tekort 2026-2029.'},
-  {id:'graetheide',name:'Graetheide (nieuw 380kV)',kv:380,lat:51.046,lng:5.820,province:'Limburg',status:'planned',congestion_score:7,bess_score:7,waiting_list_mw:260,overload_mw:55,relief_year:2028,flex_demand_mw:200,severity:'HIGH',notes:'Nieuw 380/150kV station Graetheide voor Chemelot complex (DSM, OCI, LyondellBasell, Sabic). Huidige 150kV via Maasbracht onvoldoende voor groeiende industriele electrificatie. Maasbracht–Graetheide 380kV in planning.'},
-  {id:'almere_zeewolde',name:'Almere/Zeewolde (nieuw 380kV)',kv:380,lat:52.342,lng:5.338,province:'Flevoland',status:'planned',congestion_score:7,bess_score:7,waiting_list_mw:300,overload_mw:70,relief_year:2030,flex_demand_mw:260,severity:'HIGH',notes:'Nieuw 380kV station als onderdeel Diemen–Lelystad–Ens verbinding. 6 locatiealternatieven Almere/Zeewolde onderzocht. Beslissing zomer 2026. Pre-development BESS kans.'},
-  {id:'zeeuws_vl',name:'Zeeuws-Vlaanderen (nieuw 380kV)',kv:380,lat:51.322,lng:3.825,province:'Zeeland',status:'planned',congestion_score:6,bess_score:7,waiting_list_mw:220,overload_mw:45,relief_year:2028,flex_demand_mw:200,severity:'MEDIUM-HIGH',notes:'TenneT bouwt nieuwe 380kV verbinding Zeeuws-Vlaanderen voor Terneuzen/Sluiskil chemisch cluster (Dow, Yara, ArcelorMittal, Bio Base). Huidig alleen 150kV = bottleneck.'},
-  {id:'halsteren',name:'Bergen op Zoom / Halsteren (nieuw 150kV)',kv:150,lat:51.500,lng:4.285,province:'Noord-Brabant',status:'planned',congestion_score:5,bess_score:6,waiting_list_mw:150,overload_mw:30,relief_year:2028,flex_demand_mw:120,severity:'MEDIUM',notes:'Nieuw 150kV station Halsteren/Bergen op Zoom gepland 2028. West-Brabant capaciteitsuitbreiding. Pre-development BESS kans naast nieuw station.'},
-  {id:'europoort_380',name:'Europoort (nieuw 380kV)',kv:380,lat:51.940,lng:4.049,province:'Zuid-Holland',status:'planned',congestion_score:9,bess_score:9,waiting_list_mw:1200,overload_mw:180,relief_year:2032,flex_demand_mw:500,severity:'CRITICAL',notes:'Gepland nieuw 380kV station Europoort als kern toekomstige energievoorziening havengebied deelnet. Samen met nieuw 150kV Europoort. H2/elektrolyse projecten. Wachtlijst sluit aan bij Maasvlakte.'},
-  {id:'bergum',name:'Bergum',kv:380,lat:53.196,lng:5.989,province:'Friesland',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:150,overload_mw:30,relief_year:2026,flex_demand_mw:120,severity:'MEDIUM',notes:'Friesland 380kV hub. Historisch deel congestiedriehoek Eemshaven–Bergum–Zwolle (opgelost 2023). Situatie verbeterd maar Enexis limitatiecontracten nog actief (deel 880 MW). Wind balancering BESS kans.'},
-  {id:'breukelen_400kv',name:'Breukelen-Kortrijk 380kV uitbreiding',kv:380,lat:52.170,lng:5.006,province:'Utrecht',status:'construction',congestion_score:8,bess_score:8,waiting_list_mw:400,overload_mw:80,relief_year:2029,flex_demand_mw:280,severity:'CRITICAL',notes:'TenneT uitbreiding Breukelen-Kortrijk met nieuw schakelstation en transformatoren. Bouwstart begin 2025. Oplossing voor drieprovincie overbelasting (Utrecht/Gelderland/Flevoland). Tevens onderzoek verdere uitbreiding voor Utrecht-Noord verbinding.'},
+// ═══════════════════════════════════════════════
+// NETSTATIONS (110/150/220/380 kV)
+// ═══════════════════════════════════════════════
+const STATIONS=[
+{id:'maasvlakte',name:'Maasvlakte',kv:380,lat:51.956,lng:4.016,province:'Zuid-Holland',status:'operational',congestion_score:10,bess_score:10,waiting_list_mw:2068,overload_mw:244,relief_year:2030,flex_demand_mw:600,severity:'CRITICAL',notes:'Hoogste congestie NL. Wachtlijst 5x gegroeid: 426 MW (2023) naar 2068 MW (2025). BESS top target. Aanlandpunt IJmuiden Ver Beta/Gamma + Nederwiek 2 via nieuw Amaliahaven 380kV station.'},
+{id:'eindhoven',name:'Eindhoven',kv:380,lat:51.440,lng:5.470,province:'Noord-Brabant',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:1400,overload_mw:220,relief_year:2027,flex_demand_mw:500,severity:'CRITICAL',notes:'Snelst groeiende vraagzone NL. ASML + Brainport. Nieuwe Tilburg 380kV + Geertruidenberg transformers 2027.'},
+{id:'diemen',name:'Diemen',kv:380,lat:52.348,lng:4.979,province:'Noord-Holland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:700,overload_mw:150,relief_year:2029,flex_demand_mw:450,severity:'CRITICAL',notes:'Amsterdam hub. Nieuw A9-Zuid 380kV station (Vijfhuizen) gepland 2029.'},
+{id:'krimpen',name:'Krimpen a/d IJssel',kv:380,lat:51.921,lng:4.617,province:'Zuid-Holland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:800,overload_mw:120,relief_year:2028,flex_demand_mw:400,severity:'CRITICAL',notes:'Zuid-Holland volledig congestie dec 2024. Geen nieuwe grote afnemers tot ~2028.'},
+{id:'eemshaven',name:'Eemshaven',kv:380,lat:53.433,lng:6.837,province:'Groningen',status:'operational',congestion_score:9,bess_score:10,waiting_list_mw:1100,overload_mw:200,relief_year:2032,flex_demand_mw:700,severity:'CRITICAL',notes:'Primaire offshore wind landingsplaats NL. Aanlandpunt: HKN (operationeel), Ten Noorden van Wadden (2027), Doordewind 1+2 (2031-2033). TenneT investeert ~€500M t/m 2035. GIGA Leopard 300 MW BESS precedent.'},
+{id:'delfzijl',name:'Delfzijl / Weiwerd',kv:380,lat:53.315,lng:6.900,province:'Groningen',status:'operational',congestion_score:9,bess_score:10,waiting_list_mw:800,overload_mw:170,relief_year:2032,flex_demand_mw:600,severity:'CRITICAL',notes:'GIGA Leopard 300 MW BESS (GIGA Storage/TenneT) financiering jun 2025. Industrieel cluster (Nouryon, Dow). H2 transitie.'},
+{id:'borssele',name:'Borssele',kv:380,lat:51.422,lng:3.730,province:'Zeeland',status:'operational',congestion_score:6,bess_score:9,waiting_list_mw:300,overload_mw:60,relief_year:2026,flex_demand_mw:300,severity:'MEDIUM-HIGH',notes:'Aanlandpunt: Borssele I-IV (1,5 GW operationeel), IJmuiden Ver Alpha (2 GW, 2029) + Nederwiek 1 (2 GW, 2030) via nieuwe HVDC converterstations Sloegebied. BESS voor DC-converter balancering + congestie.'},
+{id:'dodewaard',name:'Dodewaard',kv:380,lat:51.893,lng:5.653,province:'Gelderland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:2250,overload_mw:250,relief_year:2033,flex_demand_mw:600,severity:'CRITICAL',notes:'5600 MW gecontracteerd vs 3350 MW beschikbaar. Extra transformator vertraagd 2029-2033.'},
+{id:'lelystad',name:'Lelystad',kv:380,lat:52.520,lng:5.465,province:'Flevoland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:700,overload_mw:130,relief_year:2031,flex_demand_mw:420,severity:'CRITICAL',notes:'Een van drie knelpuntstations. Verlichting niet voor 2031.'},
+{id:'geertruidenberg',name:'Geertruidenberg',kv:380,lat:51.700,lng:4.850,province:'Noord-Brabant',status:'operational',congestion_score:8,bess_score:9,waiting_list_mw:1200,overload_mw:190,relief_year:2027,flex_demand_mw:450,severity:'CRITICAL',notes:'Extra transformator 2026: +200 MW. Tweede transformator + Tilburg 2027: +405 MW. Toekomstig HVDC converterstation Nederwiek 3 gepland 2031.'},
+{id:'langerak',name:'Langerak (Doetinchem)',kv:380,lat:51.967,lng:6.295,province:'Gelderland',status:'operational',congestion_score:9,bess_score:8,waiting_list_mw:900,overload_mw:160,relief_year:2033,flex_demand_mw:400,severity:'CRITICAL',notes:'Gelderland overload driehoek. 380kV Dodewaard-Doetinchem upgrade lopend.'},
+{id:'bleiswijk',name:'Bleiswijk',kv:380,lat:51.988,lng:4.538,province:'Zuid-Holland',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:420,overload_mw:80,relief_year:2027,flex_demand_mw:300,severity:'CRITICAL',notes:'Randstad 380kV ring. TenneT bouwt nieuw 150kV Zevenhuizen (~7km A12, ~2027).'},
+{id:'wateringen',name:'Wateringen',kv:380,lat:52.026,lng:4.262,province:'Zuid-Holland',status:'operational',congestion_score:9,bess_score:8,waiting_list_mw:550,overload_mw:100,relief_year:2029,flex_demand_mw:380,severity:'CRITICAL',notes:'Randstad 380kV ring. Den Haag, Westland tuinbouw. Zuid-Holland congestie dec 2024.'},
+{id:'crayestein',name:'Crayestein (Dordrecht)',kv:380,lat:51.803,lng:4.692,province:'Zuid-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:300,overload_mw:65,relief_year:2028,flex_demand_mw:240,severity:'HIGH',notes:'Dordrecht/Hoekse Waard. Deel Zuid-Holland congestiezone.'},
+{id:'vierverlaten',name:'Vierverlaten',kv:380,lat:53.162,lng:6.490,province:'Groningen',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:380,overload_mw:90,relief_year:2029,flex_demand_mw:320,severity:'CRITICAL',notes:'Eemshaven-Vierverlaten 380kV in gebruik 2023. Vierverlaten-Ens 380kV onderzoek (NRD jan 2024).'},
+{id:'beverwijk',name:'Beverwijk / Wijk aan Zee',kv:380,lat:52.493,lng:4.655,province:'Noord-Holland',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:400,overload_mw:100,relief_year:2027,flex_demand_mw:300,severity:'CRITICAL',notes:'Aanlandpunt: HKN 700 MW (2023), HKW Alpha 700 MW (2024), HKW Beta 700 MW (2027). Velsen-Beverwijk-Oterleek 380kV klaar 2027. Tata Steel + IJmuiden Ver.'},
+{id:'meeden',name:'Meeden',kv:380,lat:53.091,lng:6.927,province:'Groningen',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:400,overload_mw:100,relief_year:2032,flex_demand_mw:350,severity:'CRITICAL',notes:'Centraal Groningen. Wachtlijst tot 2032+.'},
+{id:'maasbracht',name:'Maasbracht',kv:380,lat:51.154,lng:5.893,province:'Limburg',status:'operational',congestion_score:6,bess_score:7,waiting_list_mw:200,overload_mw:50,relief_year:2028,flex_demand_mw:220,severity:'MEDIUM-HIGH',notes:'Station in renovatie. Maasbracht-Graetheide 380kV + Maasbracht-Einighausen upgrade. Grensoverschrijdend BE+DE.'},
+{id:'boxmeer',name:'Boxmeer',kv:380,lat:51.645,lng:5.945,province:'Noord-Brabant',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:40,relief_year:2030,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'Noord-Oost Brabant. Zonder Wijchen: wachttijd 2033-2036.'},
+{id:'arnhem',name:'Arnhem',kv:380,lat:51.985,lng:5.909,province:'Gelderland',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:600,overload_mw:110,relief_year:2031,flex_demand_mw:300,severity:'CRITICAL',notes:'Gelderland hoofd 380kV hub. TenneT HQ. Alle omliggende 150kV stations congestie.'},
+{id:'rilland',name:'Rilland',kv:380,lat:51.424,lng:4.141,province:'Zeeland',status:'operational',congestion_score:5,bess_score:7,waiting_list_mw:200,overload_mw:40,relief_year:2026,flex_demand_mw:250,severity:'MEDIUM',notes:'Aanlandpunt Borssele offshore wind. Terneuzen chemisch cluster.'},
+{id:'breukelen',name:'Breukelen-Kortrijk',kv:380,lat:52.168,lng:5.004,province:'Utrecht',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:400,overload_mw:80,relief_year:2029,flex_demand_mw:280,severity:'CRITICAL',notes:'Knelpunt Utrecht+Gelderland+Flevoland. Bouw uitbreiding start 2025.'},
+{id:'bergum',name:'Bergum',kv:380,lat:53.196,lng:5.989,province:'Friesland',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:150,overload_mw:30,relief_year:2026,flex_demand_mw:120,severity:'MEDIUM',notes:'Friesland 380kV hub. Enexis limitatiecontracten (deel 880 MW).'},
+{id:'ens',name:'Ens',kv:380,lat:52.638,lng:5.668,province:'Flevoland',status:'operational',congestion_score:7,bess_score:8,waiting_list_mw:420,overload_mw:80,relief_year:2029,flex_demand_mw:320,severity:'HIGH',notes:'Noordoostpolder hub. 880 MW invoedbeperkingen. Vierverlaten-Ens 380kV onderzoek.'},
+{id:'hengelo',name:'Hengelo',kv:380,lat:52.270,lng:6.800,province:'Overijssel',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:350,overload_mw:80,relief_year:2031,flex_demand_mw:200,severity:'HIGH',notes:'Industrieel Twente. Herkalibratie dec 2025: aanhoudende overbelasting.'},
+// 150 kV
+{id:'lageweide',name:'Utrecht (Lage Weide)',kv:150,lat:52.105,lng:5.060,province:'Utrecht',status:'operational',congestion_score:7,bess_score:8,waiting_list_mw:281,overload_mw:60,relief_year:2033,flex_demand_mw:320,severity:'HIGH',notes:'250 MW tekort 2026-2029. TenneT/Stedin: 320 MW flex nodig tot 2033.'},
+{id:'europoort150',name:'Europoort (150kV)',kv:150,lat:51.942,lng:4.047,province:'Zuid-Holland',status:'operational',congestion_score:9,bess_score:9,waiting_list_mw:1200,overload_mw:180,relief_year:2032,flex_demand_mw:500,severity:'CRITICAL',notes:'150kV station vervangen (oplevering medio 2026). H2/elektrolyse projecten Rotterdam haven.'},
+{id:'oostzaan',name:'Oostzaan',kv:150,lat:52.426,lng:4.883,province:'Noord-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:320,overload_mw:70,relief_year:2027,flex_demand_mw:200,severity:'HIGH',notes:'Amsterdam Noord/Oost/Centrum. Structureel begrensd tot 2027.'},
+{id:'den_haag',name:'Den Haag (150kV)',kv:150,lat:52.076,lng:4.311,province:'Zuid-Holland',status:'operational',congestion_score:8,bess_score:7,waiting_list_mw:350,overload_mw:70,relief_year:2029,flex_demand_mw:240,severity:'CRITICAL',notes:'Stedin congestie Den Haag mrt 2025. Verlichting niet voor 2029.'},
+{id:'rotterdam_south',name:'Rotterdam-Zuid (150kV)',kv:150,lat:51.893,lng:4.480,province:'Zuid-Holland',status:'operational',congestion_score:8,bess_score:8,waiting_list_mw:500,overload_mw:90,relief_year:2030,flex_demand_mw:280,severity:'CRITICAL',notes:'150kV distributie Rotterdam-Zuid + Botlek. Petrochemie. Onderdeel Rotterdam havenprogramma.'},
+{id:'hertogenbosch',name:"'s-Hertogenbosch",kv:150,lat:51.686,lng:5.307,province:'Noord-Brabant',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:500,overload_mw:90,relief_year:2033,flex_demand_mw:250,severity:'HIGH',notes:'Den Bosch Noord. Enexis flex tender 2026+.'},
+{id:'tilburg150',name:'Tilburg (150kV)',kv:150,lat:51.557,lng:5.086,province:'Noord-Brabant',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:400,overload_mw:80,relief_year:2027,flex_demand_mw:200,severity:'HIGH',notes:'Bestaand 150kV. Nieuw 380kV De Spinder in aanbouw (oplevering 2027).'},
+{id:'almere',name:'Almere',kv:150,lat:52.375,lng:5.220,province:'Flevoland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:250,overload_mw:50,relief_year:2030,flex_demand_mw:180,severity:'HIGH',notes:'Snelst groeiende stad NL. Flevoland congestiegebied. Lelystad 380kV knelpunt.'},
+{id:'nijmegen',name:'Nijmegen',kv:150,lat:51.842,lng:5.853,province:'Gelderland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:300,overload_mw:65,relief_year:2033,flex_demand_mw:200,severity:'HIGH',notes:'Gelderland congestiezone. Wacht op Wijchen 380kV station.'},
+{id:'maastricht',name:'Maastricht',kv:150,lat:50.875,lng:5.720,province:'Limburg',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:300,overload_mw:55,relief_year:2029,flex_demand_mw:200,severity:'MEDIUM-HIGH',notes:'Onderdeel 1700 MW Brabant/Limburg congestiebeheer. Chemelot. Grensoverschrijdend BE+DE.'},
+{id:'geleen',name:'Geleen / Sittard',kv:150,lat:50.975,lng:5.837,province:'Limburg',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:220,overload_mw:45,relief_year:2028,flex_demand_mw:160,severity:'MEDIUM-HIGH',notes:'Chemelot voeding. DSM, OCI, LyondellBasell, Sabic.'},
+{id:'zwolle',name:'Zwolle',kv:150,lat:52.510,lng:6.090,province:'Overijssel',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:220,overload_mw:50,relief_year:2030,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'Regionaal knooppunt Overijssel/Flevoland.'},
+{id:'assen',name:'Assen',kv:150,lat:52.990,lng:6.563,province:'Drenthe',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:200,overload_mw:45,relief_year:2030,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'Geen extra capaciteit Enexis 2024. Agrarische electrificatie + solar.'},
+{id:'groningen_city',name:'Groningen (stad)',kv:150,lat:53.220,lng:6.568,province:'Groningen',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:35,relief_year:2030,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'Datacenter groei + woningbouw. Congestie loopt t/m 2032.'},
+{id:'leeuwarden',name:'Leeuwarden',kv:150,lat:53.200,lng:5.799,province:'Friesland',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:150,overload_mw:30,relief_year:2027,flex_demand_mw:130,severity:'MEDIUM',notes:'880 MW limitatiecontracten Friesland. Wind balancering.'},
+{id:'apeldoorn',name:'Apeldoorn',kv:150,lat:52.213,lng:5.971,province:'Gelderland',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:200,overload_mw:40,relief_year:2031,flex_demand_mw:150,severity:'MEDIUM-HIGH',notes:'Veluwe regio. Gelderland congestiegebied.'},
+{id:'dordrecht',name:'Dordrecht',kv:150,lat:51.807,lng:4.666,province:'Zuid-Holland',status:'operational',congestion_score:7,bess_score:7,waiting_list_mw:280,overload_mw:55,relief_year:2028,flex_demand_mw:180,severity:'HIGH',notes:'Industrie + scheepvaart. Zuid-Holland congestiezone.'},
+{id:'purmerend',name:'Purmerend / Zaandam',kv:150,lat:52.504,lng:4.960,province:'Noord-Holland',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:38,relief_year:2028,flex_demand_mw:140,severity:'MEDIUM-HIGH',notes:'Zaanstreek industrie + woningbouw. Noord-Holland congestiezone.'},
+{id:'alkmaar',name:'Alkmaar',kv:150,lat:52.632,lng:4.746,province:'Noord-Holland',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:160,overload_mw:32,relief_year:2028,flex_demand_mw:130,severity:'MEDIUM-HIGH',notes:'West-Friesland tuinbouw + voedingsindustrie.'},
+{id:'venlo',name:'Venlo',kv:150,lat:51.370,lng:6.175,province:'Limburg',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:180,overload_mw:35,relief_year:2028,flex_demand_mw:120,severity:'MEDIUM',notes:'Logistiek knooppunt. EV laden zware vloot.'},
+{id:'goes',name:'Goes',kv:150,lat:51.503,lng:3.889,province:'Zeeland',status:'operational',congestion_score:4,bess_score:5,waiting_list_mw:100,overload_mw:20,relief_year:2026,flex_demand_mw:80,severity:'MEDIUM',notes:'Zeeland binnenland. Borssele distributieketen.'},
+// 220 kV
+{id:'eemshaven220',name:'Eemshaven (220kV)',kv:220,lat:53.436,lng:6.840,province:'Groningen',status:'operational',congestion_score:8,bess_score:9,waiting_list_mw:500,overload_mw:120,relief_year:2032,flex_demand_mw:400,severity:'CRITICAL',notes:'220kV aansluitpunt HKN + Gemini. Invoedcongestie.'},
+{id:'beverwijk220',name:'Beverwijk (220kV)',kv:220,lat:52.496,lng:4.652,province:'Noord-Holland',status:'operational',congestion_score:7,bess_score:8,waiting_list_mw:320,overload_mw:75,relief_year:2027,flex_demand_mw:280,severity:'HIGH',notes:'220kV aanlandpunt HKW Alpha + Beta offshore wind.'},
+// 110 kV
+{id:'hengelo110',name:'Hengelo (110kV)',kv:110,lat:52.268,lng:6.798,province:'Overijssel',status:'operational',congestion_score:6,bess_score:6,waiting_list_mw:180,overload_mw:38,relief_year:2031,flex_demand_mw:130,severity:'MEDIUM-HIGH',notes:'110kV Twente industrie.'},
+{id:'enschede',name:'Enschede (110kV)',kv:110,lat:52.219,lng:6.893,province:'Overijssel',status:'operational',congestion_score:5,bess_score:5,waiting_list_mw:130,overload_mw:26,relief_year:2031,flex_demand_mw:100,severity:'MEDIUM',notes:'Twente. Universiteit + tech industrie.'},
+// Geplande stations
+{id:'tilburg_new',name:'Tilburg (nieuw 380kV)',kv:380,lat:51.565,lng:5.089,province:'Noord-Brabant',status:'construction',congestion_score:8,bess_score:9,waiting_list_mw:900,overload_mw:140,relief_year:2027,flex_demand_mw:350,severity:'CRITICAL',notes:'Nieuw De Spinder station in aanbouw. Oplevering 2027 geeft +405 MW.'},
+{id:'wijchen',name:'Wijchen (nieuw 380kV)',kv:380,lat:51.812,lng:5.731,province:'Gelderland',status:'planned',congestion_score:8,bess_score:9,waiting_list_mw:800,overload_mw:150,relief_year:2033,flex_demand_mw:350,severity:'CRITICAL',notes:'Gepland. Zonder Wijchen: NE Brabant wacht tot 2033-2036. Langste BESS revenue window NL.'},
+{id:'vijfhuizen',name:'Vijfhuizen / A9-Zuid (380kV)',kv:380,lat:52.341,lng:4.700,province:'Noord-Holland',status:'planned',congestion_score:9,bess_score:8,waiting_list_mw:550,overload_mw:130,relief_year:2029,flex_demand_mw:350,severity:'CRITICAL',notes:'Gepland nieuw 380kV Haarlemmermeer. Locatiebeslissing vroeg 2026. Verlichting Diemen/Vijfhuizen 2029.'},
+{id:'utrecht_noord',name:'Utrecht-Noord / Haarrijn (380kV)',kv:380,lat:52.088,lng:5.012,province:'Utrecht',status:'planned',congestion_score:7,bess_score:7,waiting_list_mw:250,overload_mw:50,relief_year:2030,flex_demand_mw:220,severity:'HIGH',notes:'Haarrijn locatie goedgekeurd nov 2025. Verbinding via Lage Weide en Breukelen-Kortrijk.'},
+{id:'graetheide',name:'Graetheide (nieuw 380kV)',kv:380,lat:51.046,lng:5.820,province:'Limburg',status:'planned',congestion_score:7,bess_score:7,waiting_list_mw:260,overload_mw:55,relief_year:2028,flex_demand_mw:200,severity:'HIGH',notes:'Gepland voor Chemelot complex (DSM, OCI, LyondellBasell, Sabic). Maasbracht-Graetheide 380kV in planning.'},
+{id:'almere_zeewolde',name:'Almere/Zeewolde (nieuw 380kV)',kv:380,lat:52.342,lng:5.338,province:'Flevoland',status:'planned',congestion_score:7,bess_score:7,waiting_list_mw:300,overload_mw:70,relief_year:2030,flex_demand_mw:260,severity:'HIGH',notes:'Onderdeel Diemen-Lelystad-Ens verbinding. Beslissing zomer 2026.'},
+{id:'europoort_380',name:'Europoort (nieuw 380kV)',kv:380,lat:51.940,lng:4.049,province:'Zuid-Holland',status:'planned',congestion_score:9,bess_score:9,waiting_list_mw:1200,overload_mw:180,relief_year:2032,flex_demand_mw:500,severity:'CRITICAL',notes:'Gepland 380kV Europoort. H2/elektrolyse projects. Amaliahaven 380kV hoofdstation voor IJmuiden Ver Beta/Gamma + Nederwiek 2.'},
+{id:'middenmeer',name:'Middenmeer (nieuw 380kV)',kv:380,lat:52.800,lng:4.991,province:'Noord-Holland',status:'planned',congestion_score:7,bess_score:8,waiting_list_mw:280,overload_mw:80,relief_year:2028,flex_demand_mw:250,severity:'HIGH',notes:'Gepland NHN. Connects Middenmeer windzone + toekomstige offshore wind aanlanding.'},
+{id:'zeeuws_vl',name:'Zeeuws-Vlaanderen (nieuw 380kV)',kv:380,lat:51.322,lng:3.825,province:'Zeeland',status:'planned',congestion_score:6,bess_score:7,waiting_list_mw:220,overload_mw:45,relief_year:2028,flex_demand_mw:200,severity:'MEDIUM-HIGH',notes:'TenneT nieuwe 380kV verbinding voor Terneuzen/Sluiskil cluster (Dow, Yara, ArcelorMittal).'},
 ];
 
-// Provincie congestie scores
-const PROV_SCORES = {'Zuid-Holland':9,'Noord-Holland':8,'Groningen':8,'Gelderland':8,'Utrecht':7,'Noord-Brabant':7,'Overijssel':7,'Drenthe':6,'Limburg':6,'Flevoland':7,'Zeeland':5,'Friesland':5};
+// ═══════════════════════════════════════════════
+// OFFSHORE WINDPARKEN — geverifieerde netaansluiting per project
+// Bronnen: TenneT.eu, RVO, Rijksoverheid, Kamerstukken 2023-2025
+// ═══════════════════════════════════════════════
+const WIND_PARKS=[
+  // Operationeel
+  {id:'borssele1_2',name:'Borssele I & II',type:'wind',status:'operational',lat:51.65,lng:3.20,capacity_mw:752,land_station:'borssele',land_station_name:'Borssele 380kV',voltage:'220kV AC',operational_year:2020,developer:'Orsted/Shell',bess_score:8,notes:'Eerste grote Nederlandse offshore windpark (TenneT Net op Zee). 752 MW operationeel 2020. Aanlandpunt Borssele 380kV. Invoedbeperkingen bij hoog wind + laag vraag = BESS kans.'},
+  {id:'borssele3_4',name:'Borssele III & IV',type:'wind',status:'operational',lat:51.72,lng:3.05,capacity_mw:731,land_station:'borssele',land_station_name:'Borssele 380kV',voltage:'220kV AC',operational_year:2021,developer:'Shell/Eneco/Van Oord',bess_score:8,notes:'731 MW operationeel 2021. Aanlanding Borssele. Samen met Borssele I+II totaal 1.483 MW op Borssele 380kV. Hoge invoedpieken bij stormweer.'},
+  {id:'hollandse_kust_z',name:'Hollandse Kust Zuid',type:'wind',status:'operational',lat:52.18,lng:4.20,capacity_mw:1500,land_station:'maasvlakte',land_station_name:'Maasvlakte 380kV',voltage:'220kV AC (2x700MW)',operational_year:2023,developer:'Vattenfall',bess_score:10,notes:'1.500 MW (2x700 MW platforms) operationeel 2023. Aanlandpunt: Maasvlakte 380kV. Grootste bijdrage aan Maasvlakte overbelasting. BESS co-locatie hier is strategisch voor congestie + invoedpiekopvang.'},
+  {id:'hollandse_kust_n',name:'Hollandse Kust Noord',type:'wind',status:'operational',lat:52.74,lng:4.45,capacity_mw:759,land_station:'beverwijk',land_station_name:'Beverwijk 380kV (Wijk aan Zee)',voltage:'220kV AC',operational_year:2023,developer:'Shell/CrossWind',bess_score:8,notes:'759 MW operationeel 2023. Aanlandpunt: Beverwijk/Wijk aan Zee 380kV. Onderdeel congestie Noord van Noordzeekanaal.'},
+  {id:'hollandse_kust_w_alpha',name:'Hollandse Kust West Alpha',type:'wind',status:'operational',lat:52.58,lng:4.08,capacity_mw:700,land_station:'beverwijk',land_station_name:'Beverwijk 380kV (Wijk aan Zee)',voltage:'220kV AC',operational_year:2024,developer:'Ecowende (Eneco/Shell)',bess_score:8,notes:'700 MW operationeel 2024. Aanlandpunt: Beverwijk/Wijk aan Zee (Heemskerk). Voegt 700 MW toe aan reeds congestiebeladen Noord-Holland kust netwerk.'},
+  {id:'gemini',name:'Gemini',type:'wind',status:'operational',lat:54.00,lng:5.95,capacity_mw:600,land_station:'eemshaven',land_station_name:'Eemshaven 380kV',voltage:'220kV AC',operational_year:2017,developer:'Northland Power/Siemens',bess_score:9,notes:'600 MW operationeel 2017. Aanlandpunt: Eemshaven 380kV. Bijdraagt aan Eemshaven invoedcongestie samen met HKN en toekomstige Doordewind.'},
+  {id:'princess_amalia',name:'Prinses Amalia',type:'wind',status:'operational',lat:52.87,lng:4.40,capacity_mw:120,land_station:'beverwijk',land_station_name:'Beverwijk 380kV',voltage:'150kV AC',operational_year:2008,developer:'Vattenfall/WPD',bess_score:6,notes:'120 MW operationeel 2008. Oudste commercieel windpark NL. Aanlandpunt: IJmuiden/Beverwijk regio.'},
+  {id:'luchterduinen',name:'Luchterduinen',type:'wind',status:'operational',lat:52.50,lng:4.27,capacity_mw:129,land_station:'beverwijk',land_station_name:'Beverwijk 380kV',voltage:'150kV AC',operational_year:2015,developer:'Vattenfall/Eneco',bess_score:6,notes:'129 MW operationeel 2015. Aanlandpunt: Noord-Holland kust regio. Bijdraagt aan Beverwijk corridor invoeddruk.'},
+  // Gepland / In aanbouw
+  {id:'hollandse_kust_w_beta',name:'Hollandse Kust West Beta',type:'wind',status:'construction',lat:52.45,lng:4.00,capacity_mw:760,land_station:'beverwijk',land_station_name:'Beverwijk 380kV (Wijk aan Zee)',voltage:'220kV AC',operational_year:2027,developer:'RWE (Ecowende / Oranje Wind Power II)',bess_score:9,notes:'760 MW. Aanlandpunt: Beverwijk/Wijk aan Zee 380kV. Operationeel Q4 2027. Park gebouwd door RWE. Na ingebruikname: Beverwijk corridor bereikt ~3.3 GW totaal invoedcapaciteit. Grote BESS kans 2027+.'},
+  {id:'ten_noorden_wadden',name:'Ten Noorden van de Waddeneilanden',type:'wind',status:'construction',lat:53.55,lng:5.40,capacity_mw:700,land_station:'eemshaven',land_station_name:'Eemshaven 380kV',voltage:'220kV AC',operational_year:2027,developer:'nader te bepalen',bess_score:9,notes:'700 MW. Aanlandpunt: Eemshaven (via Schiermonnikoog, tracé Eemshaven West). Operationeel 2026-2027. Voegt 700 MW toe aan reeds zwaar belaste Eemshaven cluster. BESS voor piekopvang bij hoog wind.'},
+  {id:'ijmuiden_ver_alpha',name:'IJmuiden Ver Alpha',type:'wind',status:'construction',lat:52.82,lng:3.65,capacity_mw:2000,land_station:'borssele',land_station_name:'Borssele 380kV (HVDC converterstation)',voltage:'525kV DC',operational_year:2029,developer:'Noordzeker (ABP/APG/SSE Renewables)',bess_score:10,notes:'2.000 MW (2 GW) HVDC. Aanlandpunt: BORSSELE — nieuw 525kV DC converterstation Sloegebied (Belgiëweg Oost) → 380kV Borssele. Operationeel Q4 2029. Samen met Nederwiek 1 eerste 2GW-standaard DC verbinding NL. Enorme BESS kans naast DC-converter voor grid balancering.'},
+  {id:'ijmuiden_ver_beta',name:'IJmuiden Ver Beta',type:'wind',status:'planned',lat:52.90,lng:3.50,capacity_mw:2000,land_station:'maasvlakte2',land_station_name:'Maasvlakte Amaliahaven (nieuw 380kV)',voltage:'525kV DC',operational_year:2030,developer:'Zeevonk II (Vattenfall/CIP)',bess_score:10,notes:'2.000 MW (2 GW) HVDC. Aanlandpunt: MAASVLAKTE — nieuw 525kV DC converterstation Tweede Maasvlakte → 380kV Amaliahaven (nieuw station). Operationeel Q4 2029-2030. Zeevonk II bouwt ook 1 GW elektrolyser Rotterdam. BESS hier = maximale waardestapeling.'},
+  {id:'ijmuiden_ver_gamma',name:'IJmuiden Ver Gamma',type:'wind',status:'planned',lat:52.95,lng:3.40,capacity_mw:2000,land_station:'maasvlakte2',land_station_name:'Maasvlakte Amaliahaven (nieuw 380kV)',voltage:'525kV DC',operational_year:2030,developer:'nader te bepalen (tender 2025)',bess_score:10,notes:'2.000 MW (2 GW) HVDC. Aanlandpunt: MAASVLAKTE — zelfde tracé als Beta, converterstation naast Beta op Tweede Maasvlakte. Operationeel ~2030. Kavels Gamma-A (1 GW) en Gamma-B (1 GW) tender lopend.'},
+  {id:'nederwiek_1',name:'Nederwiek 1',type:'wind',status:'planned',lat:52.60,lng:3.20,capacity_mw:2000,land_station:'borssele',land_station_name:'Borssele 380kV (HVDC converterstation)',voltage:'525kV DC',operational_year:2030,developer:'nader te bepalen (tender Q4 2025)',bess_score:10,notes:'2.000 MW (2 GW) HVDC. Aanlandpunt: BORSSELE — parallel kabeltracé met IJmuiden Ver Alpha, via Veerse Meer, converterstation Sloegebied. Operationeel 2030. Tender kavel I-A (1 GW) Q4 2025.'},
+  {id:'nederwiek_2',name:'Nederwiek 2',type:'wind',status:'planned',lat:52.50,lng:3.10,capacity_mw:2000,land_station:'maasvlakte2',land_station_name:'Maasvlakte Amaliahaven (nieuw 380kV)',voltage:'525kV DC',operational_year:2031,developer:'nader te bepalen (tender 2026)',bess_score:9,notes:'2.000 MW (2 GW) HVDC. Aanlandpunt: MAASVLAKTE Amaliahaven. Operationeel ~2031. Bouwstart netinfrastructuur Maasvlakte gestart apr 2025 (BAM + NRG).'},
+  {id:'nederwiek_3',name:'Nederwiek 3',type:'wind',status:'planned',lat:52.40,lng:3.00,capacity_mw:2000,land_station:'geertruidenberg',land_station_name:'Geertruidenberg 380kV (HVDC converterstation)',voltage:'525kV DC',operational_year:2032,developer:'nader te bepalen (tender 2026)',bess_score:9,notes:'2.000 MW (2 GW) HVDC. Aanlandpunt: GEERTRUIDENBERG/MOERDIJK — gepland converterstation. Operationeel ~2031-2032. Vergroot Brabant/Limburg invoeddruk enorm. BESS bij Geertruidenberg kritisch.'},
+  {id:'doordewind_1',name:'Doordewind 1',type:'wind',status:'planned',lat:54.20,lng:5.50,capacity_mw:2000,land_station:'eemshaven',land_station_name:'Eemshaven (nieuw converterstation Waddenweg)',voltage:'525kV DC',operational_year:2032,developer:'nader te bepalen (tender Q1-Q2 2027)',bess_score:9,notes:'2.000 MW (2 GW) HVDC. Aanlandpunt: EEMSHAVEN — kabels via Schiermonnikoog, Waddenzee → converterstation Waddenweg Eemshaven. Operationeel ~2032. Tender kavel I gepland Q1-Q2 2027. Enorme nieuwe invoeddruk Groningen.'},
+  {id:'doordewind_2',name:'Doordewind 2',type:'wind',status:'planned',lat:54.30,lng:5.30,capacity_mw:2000,land_station:'eemshaven',land_station_name:'Eemshaven Oostpolderweg (nieuw 380kV station)',voltage:'525kV DC',operational_year:2033,developer:'nader te bepalen',bess_score:9,notes:'2.000 MW (2 GW) HVDC. Aanlandpunt: EEMSHAVEN Oostpolderweg — nieuw 380kV station (85 ha, ~120 voetbalvelden) wordt gebouwd voor aansluiting Doordewind 2. Operationeel ~2033. Samen met Doordewind 1: +4 GW op Eemshaven cluster.'},
+];
 
-// Map init
-const map = L.map('map',{zoomControl:true,attributionControl:false}).setView([52.2,5.1],8);
+// ═══════════════════════════════════════════════
+// GROTE ZONNEPARKEN (>50 MW, directe HV aansluiting)
+// Bronnen: TenneT, SDE++ RVO, polderpv.nl, zon-op-kaart
+// ═══════════════════════════════════════════════
+const SOLAR_PARKS=[
+  {id:'sol_midden_groningen',name:'Zonnepark Midden-Groningen',type:'solar',status:'operational',lat:53.153,lng:6.758,capacity_mw:130,land_station:'meeden',land_station_name:'Meeden 380kV',voltage:'150kV',operational_year:2019,developer:'Groningen Seaports / GroenLeven',bess_score:8,notes:'130 MW — Eerste zonnepark met directe TenneT HV aansluiting NL. 117 hectare nabij Hoogezand-Sappemeer. Aanlandpunt: Meeden 380kV. Invoedcongestie Groningen = grote BESS kans.'},
+  {id:'sol_vlagtwedde',name:'Zonnepark Vlagtwedde',type:'solar',status:'operational',lat:53.044,lng:7.098,capacity_mw:110,land_station:'meeden',land_station_name:'Meeden / Groningen Oost',voltage:'150kV',operational_year:2021,developer:'Baywa r.e. / GroenLeven',bess_score:7,notes:'110 MW, 350.000 panelen. Groningen Oost invoedbeperkingszone. Enexis limitatiecontracten.'},
+  {id:'sol_sunport_delfzijl',name:'Sunport Delfzijl',type:'solar',status:'operational',lat:53.319,lng:6.924,capacity_mw:120,land_station:'delfzijl',land_station_name:'Delfzijl/Weiwerd 380kV',voltage:'150kV',operational_year:2020,developer:'Groningen Seaports / GroenLeven',bess_score:9,notes:'120 MW op voormalige ENKA-fabrieksterreinen. Directe aansluiting op Delfzijl/Weiwerd 380kV hub. GIGA Leopard BESS precedent in dezelfde zone.'},
+  {id:'sol_kabeljauwbeek',name:'Zonnepark Kabeljauwbeek',type:'solar',status:'operational',lat:51.549,lng:4.951,capacity_mw:130,land_station:'tilburg150',land_station_name:'Tilburg 150kV / Eindhoven regio',voltage:'150kV',operational_year:2024,developer:'Eneco',bess_score:7,notes:'130 MW (Eneco grootst 2024). Aanlandpunt: Brabant 150kV. Congestiegebied Noord-Brabant. KPN als afnemer (100% groene stroom).'},
+  {id:'sol_eemshaven_solar',name:'Zonnepark Eemshaven (SolarFields)',type:'solar',status:'operational',lat:53.424,lng:6.858,capacity_mw:75,land_station:'eemshaven',land_station_name:'Eemshaven 380kV',voltage:'150kV',operational_year:2020,developer:'SolarFields / RWE',bess_score:9,notes:'75 MW in Eemshaven industriezone. Directe aansluiting op zwaar belast Eemshaven 380kV cluster. BESS co-locatie met GIGA Leopard interessant voor combinatie zon + wind invoedbeheer.'},
+  {id:'sol_duurkenakker',name:'Zonnepark Duurkenakker',type:'solar',status:'operational',lat:53.075,lng:6.791,capacity_mw:100,land_station:'meeden',land_station_name:'Meeden 380kV / Groningen',voltage:'150kV',operational_year:2020,developer:'Sunvest',bess_score:7,notes:'100 MW Muntendam (Groningen). Enexis invoedbeperking zone. Limitatiecontracten. BESS voor invoedbeheer.'},
+  {id:'sol_rilland',name:'Zonnepark Rilland',type:'solar',status:'operational',lat:51.430,lng:4.151,capacity_mw:90,land_station:'rilland',land_station_name:'Rilland 380kV',voltage:'150kV',operational_year:2021,developer:'Eneco / Vattenfall',bess_score:8,notes:'90 MW nabij Rilland 380kV station. Gecombineerd met Borssele offshore wind invoeding op zelfde netknooppunt = double invoeddruk bij goed weer.'},
+  {id:'sol_cranendonck',name:'Zonnepark Cranendonck',type:'solar',status:'operational',lat:51.335,lng:5.598,capacity_mw:85,land_station:'eindhoven',land_station_name:'Eindhoven 380kV regio',voltage:'150kV',operational_year:2021,developer:'BayWa r.e. / Sunvest',bess_score:7,notes:'85 MW Noord-Brabant. Onderdeel Eindhoven congestiegebied. Agrarisch + solar combinatie.'},
+  {id:'sol_sudveen',name:'Zonnepark Sudveen (Drenthe)',type:'solar',status:'operational',lat:52.779,lng:6.539,capacity_mw:80,land_station:'assen',land_station_name:'Assen 150kV / Drenthe',voltage:'150kV',operational_year:2022,developer:'GroenLeven',bess_score:6,notes:'80 MW Drenthe. Geen extra capaciteit gevonden Enexis 2024. Agrarische electrificatie + solar invoed.'},
+  {id:'sol_roermond',name:'Zonnepark Roermond (Maasplassen)',type:'solar',status:'operational',lat:51.208,lng:5.990,capacity_mw:65,land_station:'geleen',land_station_name:'Geleen/Sittard 150kV',voltage:'150kV',operational_year:2022,developer:'Vattenfall',bess_score:6,notes:'65 MW drijvend zonnepark Maasplassen. Aanlandpunt Limburg 150kV grid.'},
+  // Grote gepland/in aanbouw
+  {id:'sol_zeewolde',name:'Zonnepark Zeewolde (gepland)',type:'solar',status:'planned',lat:52.335,lng:5.541,capacity_mw:200,land_station:'lelystad',land_station_name:'Lelystad 380kV / Flevoland',voltage:'150kV',operational_year:2026,developer:'nader te bepalen',bess_score:8,notes:'~200 MW gepland. Flevoland congestiegebied. 5.600 MW gecontracteerd vs 3.350 MW beschikbaar. Extra solar maakt Flevoland congestie acute BESS kans.'},
+  {id:'sol_groningen_n',name:'Zonnepark Noord-Groningen (gepland)',type:'solar',status:'planned',lat:53.370,lng:6.620,capacity_mw:250,land_station:'eemshaven',land_station_name:'Eemshaven 380kV',voltage:'150kV',operational_year:2027,developer:'diverse ontwikkelaars SDE++',bess_score:9,notes:'250 MW pijplijn Noord-Groningen. Aanlanding Eemshaven cluster. In combinatie met offshore wind: extreme invoedpieken op Eemshaven. BESS voor combinatie zon+wind invoedbeheer kritisch.'},
+  {id:'sol_brabant_large',name:'Zonnepark Midden-Brabant cluster',type:'solar',status:'planned',lat:51.620,lng:5.058,capacity_mw:180,land_station:'tilburg_new',land_station_name:'Tilburg De Spinder (nieuw 380kV)',voltage:'150kV',operational_year:2027,developer:'diverse ontwikkelaars SDE++',bess_score:8,notes:'~180 MW cluster Midden-Brabant. Aanlandpunt: Tilburg 150kV / nieuw 380kV De Spinder. Congestiegebied. BESS voor invoedpiekopvang pre-ingebruikname nieuw 380kV.'},
+];
+
+// Provincie scores
+const PROV_SCORES={'Zuid-Holland':9,'Noord-Holland':8,'Groningen':8,'Gelderland':8,'Utrecht':7,'Noord-Brabant':7,'Overijssel':7,'Drenthe':6,'Limburg':6,'Flevoland':7,'Zeeland':5,'Friesland':5};
+
+// Kaart
+const map=L.map('map',{zoomControl:true,attributionControl:false}).setView([52.2,5.1],7);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19}).addTo(map);
-L.control.attribution({prefix:'© OpenStreetMap · CARTO · TenneT · Stedin · Enexis · Liander'}).addTo(map);
-
+L.control.attribution({prefix:'© OpenStreetMap · CARTO · TenneT · RVO 2024-2025'}).addTo(map);
 map.createPane('provincesPane');
-map.getPane('provincesPane').style.zIndex = 250;
-map.getPane('provincesPane').style.pointerEvents = 'none';
+map.getPane('provincesPane').style.zIndex=250;
+map.getPane('provincesPane').style.pointerEvents='none';
 
-function scoreColor(s){
-  if(s>=8) return '#c0392b';
-  if(s>=6) return '#e67e22';
-  if(s>=4) return '#d4ac0d';
-  return '#27ae60';
+function scoreColor(s){if(s>=8)return'#c0392b';if(s>=6)return'#e67e22';if(s>=4)return'#d4ac0d';return'#27ae60';}
+function kvColor(kv,status,type){
+  if(type==='wind')return'#00b4d8';
+  if(type==='solar')return'#f9c74f';
+  if(status==='planned'||status==='construction')return'#d4ac0d';
+  if(kv===380)return'#e74c3c';if(kv===220)return'#9b59b6';if(kv===150)return'#3498db';return'#2ecc71';
 }
-function kvColor(kv,status){
-  if(status==='planned'||status==='construction') return '#d4ac0d';
-  if(kv===380) return '#e74c3c';
-  if(kv===220) return '#9b59b6';
-  if(kv===150) return '#3498db';
-  return '#2ecc71';
-}
-function kvLabel(kv,status){
-  if(status==='planned') return 'plan';
-  if(status==='construction') return 'plan';
-  if(kv===380) return '380';
-  if(kv===220) return '220';
-  if(kv===150) return '150';
-  return '110';
+function getFilterKey(item){
+  if(item.type==='wind')return'wind';
+  if(item.type==='solar')return'solar';
+  if(item.status==='planned'||item.status==='construction')return'plan';
+  return String(item.kv);
 }
 function statusBadge(s){
   const m={CRITICAL:'s-crit',HIGH:'s-high','MEDIUM-HIGH':'s-mh',MEDIUM:'s-med'};
-  return `<span class="sbadge ${m[s]||'s-med'}">${s}</span>`;
+  if(s==='wind')return '<span class="sbadge s-wind">OFFSHORE WIND</span>';
+  if(s==='solar')return '<span class="sbadge s-solar">ZONNEPARK</span>';
+  return '<span class="sbadge '+(m[s]||'s-med')+'">'+s+'</span>';
 }
 
-// Province layer
-let provLayer = null;
+// Provincie laag
+let provLayer=null;
 fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/the-netherlands.geojson')
-  .then(r=>r.json())
-  .then(gj=>{
-    provLayer = L.geoJSON(gj,{
-      pane:'provincesPane',
-      style:f=>{
-        const nm=f.properties.name||'';
-        const sc=Object.entries(PROV_SCORES).find(([k])=>nm.includes(k.split(' ').pop())||k.includes(nm));
-        const s=sc?sc[1]:4;
-        return{fillColor:scoreColor(s),fillOpacity:0.18,color:'#0f2a3a',weight:1};
-      }
-    }).addTo(map);
+  .then(r=>r.json()).then(gj=>{
+    provLayer=L.geoJSON(gj,{pane:'provincesPane',style:f=>{
+      const nm=f.properties.name||'';
+      const sc=Object.entries(PROV_SCORES).find(([k])=>nm.includes(k.split(' ').pop())||k.includes(nm));
+      const s=sc?sc[1]:4;
+      return{fillColor:scoreColor(s),fillOpacity:0.15,color:'#0f2a3a',weight:1};
+    }}).addTo(map);
   }).catch(()=>{});
 
 const ringGroup=L.layerGroup().addTo(map);
 const dotGroup=L.layerGroup().addTo(map);
-const stationMarkers={};
+let activeKV=new Set(['380','220','150','110','plan','wind','solar']);
 
-// Active kv filters
-let activeKV = new Set(['380','220','150','110','plan']);
-
-function buildStations(){
-  ringGroup.clearLayers();
-  dotGroup.clearLayers();
-  const sorted=[...STATIONS].sort((a,b)=>(a.congestion_score+a.bess_score)-(b.congestion_score+b.bess_score));
-  sorted.forEach(s=>{
-    const filterKey = (s.status==='planned'||s.status==='construction') ? 'plan' : String(s.kv);
-    if(!activeKV.has(filterKey)) return;
-    const col=scoreColor(s.congestion_score);
-    const kvcol=kvColor(s.kv,s.status);
-    // Ring
-    if(s.flex_demand_mw>0){
-      const r=10+(s.flex_demand_mw/700)*30;
-      L.circleMarker([s.lat,s.lng],{radius:r,fillColor:col,fillOpacity:0.1,color:col,weight:1,opacity:0.35}).addTo(ringGroup);
+function buildMap(){
+  ringGroup.clearLayers(); dotGroup.clearLayers();
+  const ALL=[...STATIONS,...WIND_PARKS,...SOLAR_PARKS];
+  ALL.forEach(item=>{
+    const fk=getFilterKey(item);
+    if(!activeKV.has(fk)) return;
+    const isWind=item.type==='wind';
+    const isSolar=item.type==='solar';
+    const col=isWind?'#00b4d8':isSolar?'#f9c74f':scoreColor(item.congestion_score);
+    const kvcol=kvColor(item.kv,item.status,item.type);
+    const isPlanned=item.status==='planned'||item.status==='construction';
+    // Ring voor netstations
+    if(!isWind&&!isSolar&&item.flex_demand_mw>0){
+      const r=9+(item.flex_demand_mw/700)*28;
+      L.circleMarker([item.lat,item.lng],{radius:r,fillColor:col,fillOpacity:0.1,color:col,weight:1,opacity:0.3}).addTo(ringGroup);
     }
-    // Dot
-    const isPlanned=s.status==='planned'||s.status==='construction';
-    const dotR = s.kv===380?8:s.kv===220?7:s.kv===150?6:5;
-    const m=L.circleMarker([s.lat,s.lng],{
-      radius:dotR,
-      fillColor:col,
-      fillOpacity:isPlanned?0.4:0.92,
-      color:kvcol,
-      weight:isPlanned?1.5:2,
-      dashArray:isPlanned?'4,3':null
-    });
-    m.bindTooltip(
-      `<div class="ctt"><strong>${s.name}</strong>${s.kv} kV · ${s.province}<br>Congestie: <b style="color:${col}">${s.congestion_score}/10</b> · BESS: <b style="color:#e67e22">${s.bess_score}/10</b><br><span style="color:${kvcol}">${s.status==='planned'?'📋 Gepland':s.status==='construction'?'🔨 In aanbouw':'✅ Operationeel'}</span></div>`,
-      {className:'leaflet-tooltip',sticky:true}
-    );
-    m.on('click',()=>selectStation(s.id));
-    m.addTo(dotGroup);
-    stationMarkers[s.id]=m;
+    // Marker grootte
+    let dotR=isWind?10:isSolar?8:(item.kv===380?8:item.kv===220?7:6);
+    if(isWind&&item.capacity_mw>=2000) dotR=12;
+    // Marker vorm: driehoek voor wind, ster voor solar via SVG marker
+    let marker;
+    if(isWind){
+      const iconHtml=`<div style="width:${dotR*2}px;height:${dotR*2}px;background:${isPlanned?'transparent':'#00b4d8'};border:2px solid #00b4d8;border-radius:50%;opacity:${isPlanned?0.6:0.9};${isPlanned?'border-style:dashed':''}"></div>`;
+      const icon=L.divIcon({html:iconHtml,iconSize:[dotR*2,dotR*2],iconAnchor:[dotR,dotR],className:''});
+      marker=L.marker([item.lat,item.lng],{icon});
+    } else if(isSolar){
+      const iconHtml=`<div style="width:${dotR*2}px;height:${dotR*2}px;background:${isPlanned?'transparent':'#f9c74f'};border:2px solid #f9c74f;border-radius:3px;opacity:${isPlanned?0.6:0.9};transform:rotate(45deg);${isPlanned?'border-style:dashed':''}"></div>`;
+      const icon=L.divIcon({html:iconHtml,iconSize:[dotR*2,dotR*2],iconAnchor:[dotR,dotR],className:''});
+      marker=L.marker([item.lat,item.lng],{icon});
+    } else {
+      marker=L.circleMarker([item.lat,item.lng],{radius:dotR,fillColor:col,fillOpacity:isPlanned?0.4:0.92,color:kvcol,weight:isPlanned?1.5:2,dashArray:isPlanned?'4,3':null});
+    }
+    // Tooltip
+    let ttip='';
+    if(isWind) ttip=`<div class="ctt"><strong>&#128168; ${item.name}</strong>Offshore wind · ${item.capacity_mw} MW<br>Aanlandstation: <b style="color:#00b4d8">${item.land_station_name}</b><br>Verbinding: ${item.voltage} · ${item.status==='operational'?'&#9989; Operationeel '+item.operational_year:item.status==='construction'?'&#128296; Bouw / '+item.operational_year:'&#128203; Gepland '+item.operational_year}</div>`;
+    else if(isSolar) ttip=`<div class="ctt"><strong>&#9728; ${item.name}</strong>Zonnepark · ${item.capacity_mw} MWp<br>Aanlandstation: <b style="color:#f9c74f">${item.land_station_name}</b><br>BESS score: <b style="color:#e67e22">${item.bess_score}/10</b></div>`;
+    else ttip=`<div class="ctt"><strong>${item.name}</strong>${item.kv} kV · ${item.province}<br>Congestie: <b style="color:${col}">${item.congestion_score}/10</b> · BESS: <b style="color:#e67e22">${item.bess_score}/10</b></div>`;
+    marker.bindTooltip(ttip,{className:'leaflet-tooltip',sticky:true});
+    marker.on('click',()=>selectItem(item.id,item.type||'station'));
+    marker.addTo(dotGroup);
   });
 }
-buildStations();
+buildMap();
 
 // Stats
 function updateStats(){
-  const vis=STATIONS.filter(s=>{
-    const fk=(s.status==='planned'||s.status==='construction')?'plan':String(s.kv);
-    return activeKV.has(fk);
-  });
-  document.getElementById('stat-total').textContent=vis.length;
-  document.getElementById('stat-380').textContent=vis.filter(s=>s.kv===380&&s.status==='operational').length;
-  document.getElementById('stat-220').textContent=vis.filter(s=>s.kv===220&&s.status==='operational').length;
-  document.getElementById('stat-150').textContent=vis.filter(s=>s.kv===150&&s.status==='operational').length;
-  document.getElementById('stat-110').textContent=vis.filter(s=>s.kv===110&&s.status==='operational').length;
-  document.getElementById('stat-plan').textContent=vis.filter(s=>s.status==='planned'||s.status==='construction').length;
+  const allVis=[...STATIONS,...WIND_PARKS,...SOLAR_PARKS].filter(i=>activeKV.has(getFilterKey(i)));
+  document.getElementById('stat-total').textContent=allVis.length;
+  document.getElementById('stat-380').textContent=STATIONS.filter(s=>s.kv===380&&s.status==='operational'&&activeKV.has('380')).length;
+  document.getElementById('stat-150').textContent=STATIONS.filter(s=>s.kv===150&&s.status==='operational'&&activeKV.has('150')).length;
+  document.getElementById('stat-plan').textContent=[...STATIONS,...WIND_PARKS,...SOLAR_PARKS].filter(i=>(i.status==='planned'||i.status==='construction')&&activeKV.has(getFilterKey(i))).length;
+  document.getElementById('stat-wind').textContent=WIND_PARKS.filter(i=>activeKV.has('wind')).length;
+  document.getElementById('stat-solar').textContent=SOLAR_PARKS.filter(i=>activeKV.has('solar')).length;
 }
 updateStats();
 
-// Ranking list
+// ═══════════════════════════════════════════════
+// BESS SCORE BOOST: wind en zon verhogen score van aanlandstation
+// ═══════════════════════════════════════════════
+function computeBoostedScores(){
+  const boost={};
+  // Tel MW per netstation vanuit wind + solar
+  [...WIND_PARKS,...SOLAR_PARKS].forEach(p=>{
+    const sid=p.land_station;
+    if(!sid) return;
+    if(!boost[sid]) boost[sid]=0;
+    // Operationeel: +0.5 per 500MW; gepland: +0.3 per 500MW (max +2 totaal)
+    const factor=p.status==='operational'?0.5:0.3;
+    boost[sid]+=factor*(p.capacity_mw/500);
+  });
+  // Pas toe op stations (capped at 10)
+  STATIONS.forEach(s=>{
+    const b=boost[s.id]||0;
+    s.bess_score_boosted=Math.min(10,Math.round((s.bess_score+b)*10)/10);
+  });
+}
+computeBoostedScores();
+
+// Ranking — alleen netstations, gesorteerd op bess_score_boosted
 let searchText='';
 function buildRanking(){
-  const sorted=[...STATIONS].sort((a,b)=>(b.congestion_score+b.bess_score)-(a.congestion_score+a.bess_score));
-  const el=document.getElementById('ranking-list');
-  el.innerHTML='';
-  let rank=0;
-  sorted.forEach(s=>{
-    const fk=(s.status==='planned'||s.status==='construction')?'plan':String(s.kv);
+  const sorted=[...STATIONS].sort((a,b)=>(b.bess_score_boosted||b.bess_score||0)-(a.bess_score_boosted||a.bess_score||0));
+  const el=document.getElementById('ranking-list'); el.innerHTML=''; let rank=0;
+  sorted.forEach(item=>{
+    const fk=getFilterKey(item);
     if(!activeKV.has(fk)) return;
-    if(searchText&&!s.name.toLowerCase().includes(searchText)&&!s.province.toLowerCase().includes(searchText)&&!String(s.kv).includes(searchText)) return;
+    const nm=item.name.toLowerCase();
+    const prov=(item.province||'').toLowerCase();
+    if(searchText&&!nm.includes(searchText)&&!prov.includes(searchText)&&!String(item.kv).includes(searchText)) return;
     rank++;
-    const combined=s.congestion_score+s.bess_score;
-    const col=scoreColor(s.congestion_score);
-    const kvcol=kvColor(s.kv,s.status);
-    const kvlbl=kvLabel(s.kv,s.status);
+    const col=scoreColor(item.congestion_score);
+    const score=item.bess_score_boosted||item.bess_score||0;
+    const baseScore=item.bess_score||0;
+    const boosted=score>baseScore;
     const div=document.createElement('div');
-    div.className='rank-item';
-    div.id=`rank-${s.id}`;
-    div.innerHTML=`<div class="rank-num">${rank}</div><div class="rank-bar-wrap"><div class="rank-name">${s.name}<span class="kv-pill kv-${kvlbl}">${kvlbl==='plan'?s.status==='construction'?'bouw':'plan':kvlbl+' kV'}</span></div><div class="rank-meta">${s.province} · WL: ${s.waiting_list_mw||'—'} MW</div><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${(combined/20)*100}%;background:${col}"></div></div></div><div class="rank-score" style="color:${col}">${combined}</div>`;
-    div.addEventListener('click',()=>selectStation(s.id));
+    div.className='rank-item'; div.id='rank-'+item.id;
+    const pill=`<span class="kv-pill kv-${fk==='plan'?(item.status==='construction'?'plan':'plan'):fk}">${fk==='plan'?(item.status==='construction'?'bouw':'plan'):fk+' kV'}</span>`;
+    const windSolarTag=boosted?`<span style="font-size:7px;color:#00b4d8;margin-left:3px">&#128168;+</span>`:'';
+    div.innerHTML=`<div class="rank-num">${rank}</div><div class="rank-bar-wrap"><div class="rank-name">${item.name}${pill}${windSolarTag}</div><div class="rank-meta">${item.province||''} · WL: ${item.waiting_list_mw||'—'} MW</div><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${score*10}%;background:${col}"></div></div></div><div class="rank-score" style="color:${col}">${score.toFixed(1)}</div>`;
+    div.addEventListener('click',()=>selectItem(item.id,'station'));
     el.appendChild(div);
   });
 }
 buildRanking();
 
-// Station selection
+// Select
 let activeId=null;
-function selectStation(id){
-  const s=STATIONS.find(x=>x.id===id);
-  if(!s) return;
-  if(activeId){const p=document.getElementById(`rank-${activeId}`);if(p)p.classList.remove('active');}
+function selectItem(id,type){
+  const ALL=[...STATIONS,...WIND_PARKS,...SOLAR_PARKS];
+  const item=ALL.find(x=>x.id===id); if(!item) return;
+  if(activeId){const p=document.getElementById('rank-'+activeId);if(p)p.classList.remove('active');}
   activeId=id;
-  const ri=document.getElementById(`rank-${id}`);
+  const ri=document.getElementById('rank-'+id);
   if(ri){ri.classList.add('active');ri.scrollIntoView({block:'nearest'});}
-  map.setView([s.lat,s.lng],11,{animate:true});
-  renderDetail(s);
+  map.setView([item.lat,item.lng],item.type==='wind'?9:11,{animate:true});
+  renderDetail(item);
 }
-
-function renderDetail(s){
-  const col=scoreColor(s.congestion_score);
+function renderDetail(item){
   const dp=document.getElementById('detail-panel');
-  const kvcol=kvColor(s.kv,s.status);
-  const stlabel=s.status==='planned'?'📋 Gepland':s.status==='construction'?'🔨 In aanbouw':'✅ Operationeel';
-  dp.innerHTML=`<div class="dp-title">${s.name}</div><div class="dp-kv"><span style="color:${kvcol};font-weight:700">${s.kv} kV TenneT</span> · ${s.province} · ${statusBadge(s.severity)} <span style="font-size:9px;color:#4a7a9a">${stlabel}</span></div><div class="dp-row"><span class="lbl">Congestie score</span><span class="val" style="color:${col}">${s.congestion_score}/10</span></div><div class="dp-row"><span class="lbl">BESS opportunity score</span><span class="val" style="color:#e67e22">${s.bess_score}/10</span></div><div class="dp-row"><span class="lbl">Wachtlijst</span><span class="val">${s.waiting_list_mw||'—'} MW</span></div><div class="dp-row"><span class="lbl">Piek overbelasting</span><span class="val">${s.overload_mw||'—'} MW</span></div><div class="dp-row"><span class="lbl">Flex vraag</span><span class="val">${s.flex_demand_mw||'—'} MW</span></div><div class="dp-row"><span class="lbl">Structurele verlichting</span><span class="val">${s.relief_year?'Tot '+s.relief_year:'Langdurig'}</span></div><div class="dp-bar"><div class="dp-bar-lbl">Congestie ernst</div><div class="dp-bar-bg"><div class="dp-bar-fill" style="width:${s.congestion_score*10}%;background:${col}"></div></div></div><div class="dp-bar"><div class="dp-bar-lbl">BESS revenue window</div><div class="dp-bar-bg"><div class="dp-bar-fill" style="width:${s.bess_score*10}%;background:#e67e22"></div></div></div><div class="dp-notes">${s.notes}</div>`;
+  const isWind=item.type==='wind'; const isSolar=item.type==='solar';
+  const col=isWind?'#00b4d8':isSolar?'#f9c74f':scoreColor(item.congestion_score);
+  const stl=item.status==='planned'?'&#128203; Gepland':item.status==='construction'?'&#128296; In aanbouw':'&#9989; Operationeel';
+  if(isWind){
+    dp.innerHTML=`<div class="dp-title">&#128168; ${item.name}</div><div class="dp-kv"><span style="color:#00b4d8;font-weight:700">Offshore Windpark</span> · ${statusBadge('wind')} <span style="font-size:9px;color:#4a7a9a">${stl}</span></div><div class="dp-row"><span class="lbl">Vermogen</span><span class="val" style="color:#00b4d8">${item.capacity_mw} MW</span></div><div class="dp-row"><span class="lbl">Verbindingstype</span><span class="val">${item.voltage}</span></div><div class="dp-row"><span class="lbl">Aanlandstation</span><span class="val" style="color:#00d4ff">${item.land_station_name}</span></div><div class="dp-row"><span class="lbl">Operationeel</span><span class="val">${item.operational_year}</span></div><div class="dp-row"><span class="lbl">Ontwikkelaar</span><span class="val">${item.developer}</span></div><div class="dp-row"><span class="lbl">BESS opportunity</span><span class="val" style="color:#e67e22">${item.bess_score}/10</span></div><div class="dp-bar"><div class="dp-bar-lbl">BESS revenue kans</div><div class="dp-bar-bg"><div class="dp-bar-fill" style="width:${item.bess_score*10}%;background:#e67e22"></div></div></div><div class="dp-notes">${item.notes}</div>`;
+  } else if(isSolar){
+    dp.innerHTML=`<div class="dp-title">&#9728; ${item.name}</div><div class="dp-kv"><span style="color:#f9c74f;font-weight:700">Zonnepark</span> · ${statusBadge('solar')} <span style="font-size:9px;color:#4a7a9a">${stl}</span></div><div class="dp-row"><span class="lbl">Vermogen</span><span class="val" style="color:#f9c74f">${item.capacity_mw} MWp</span></div><div class="dp-row"><span class="lbl">Verbinding</span><span class="val">${item.voltage}</span></div><div class="dp-row"><span class="lbl">Aanlandstation</span><span class="val" style="color:#f9c74f">${item.land_station_name}</span></div><div class="dp-row"><span class="lbl">Operationeel</span><span class="val">${item.operational_year}</span></div><div class="dp-row"><span class="lbl">Ontwikkelaar</span><span class="val">${item.developer}</span></div><div class="dp-row"><span class="lbl">BESS opportunity</span><span class="val" style="color:#e67e22">${item.bess_score}/10</span></div><div class="dp-bar"><div class="dp-bar-lbl">BESS kans (invoedcongestie)</div><div class="dp-bar-bg"><div class="dp-bar-fill" style="width:${item.bess_score*10}%;background:#e67e22"></div></div></div><div class="dp-notes">${item.notes}</div>`;
+  } else {
+    const boostedScore=item.bess_score_boosted||item.bess_score||0;
+    const baseScore=item.bess_score||0;
+    const boostDelta=(boostedScore-baseScore).toFixed(1);
+    const boostTag=boostedScore>baseScore?`<span style="color:#00b4d8;font-size:9px;margin-left:4px">&#128168; +${boostDelta} door wind/zon</span>`:'';
+    // Welke wind/solar parken landen hier aan?
+    const connectedWind=WIND_PARKS.filter(w=>w.land_station===item.id);
+    const connectedSolar=SOLAR_PARKS.filter(s=>s.land_station===item.id);
+    const connectedHtml=[
+      ...connectedWind.map(w=>`<div style="font-size:8px;padding:2px 0;border-bottom:1px solid #0f2336;display:flex;justify-content:space-between"><span style="color:#00b4d8">&#128168; ${w.name}</span><span style="color:#5a8aaa">${w.capacity_mw} MW · ${w.operational_year} · ${w.status==='operational'?'&#9989;':w.status==='construction'?'&#128296;':'&#128203;'}</span></div>`),
+      ...connectedSolar.map(s=>`<div style="font-size:8px;padding:2px 0;border-bottom:1px solid #0f2336;display:flex;justify-content:space-between"><span style="color:#f9c74f">&#9728; ${s.name}</span><span style="color:#5a8aaa">${s.capacity_mw} MWp · ${s.operational_year} · ${s.status==='operational'?'&#9989;':'&#128203;'}</span></div>`)
+    ].join('');
+    const connectedSection=connectedHtml?`<div style="margin-top:7px;background:#070f18;padding:6px;border-radius:4px;border-left:3px solid #00b4d8"><div style="font-size:8px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#00b4d8;margin-bottom:4px">&#128168; Aanlandende wind &amp; zon</div>${connectedHtml}</div>`:'';
+    dp.innerHTML=`<div class="dp-title">${item.name}</div><div class="dp-kv"><span style="color:${kvColor(item.kv,item.status)};font-weight:700">${item.kv} kV TenneT</span> · ${item.province||''} · ${statusBadge(item.severity)} <span style="font-size:8px;color:#4a7a9a">${stl}</span></div><div class="dp-row"><span class="lbl">Congestie score</span><span class="val" style="color:${col}">${item.congestion_score}/10</span></div><div class="dp-row"><span class="lbl">BESS basis score</span><span class="val" style="color:#e67e22">${baseScore}/10</span></div><div class="dp-row"><span class="lbl">BESS totaal (incl. wind/zon)</span><span class="val" style="color:#e67e22;font-weight:800">${boostedScore.toFixed(1)}/10 ${boostTag}</span></div><div class="dp-row"><span class="lbl">Wachtlijst</span><span class="val">${item.waiting_list_mw||'—'} MW</span></div><div class="dp-row"><span class="lbl">Piek overbelasting</span><span class="val">${item.overload_mw||'—'} MW</span></div><div class="dp-row"><span class="lbl">Flex vraag</span><span class="val">${item.flex_demand_mw||'—'} MW</span></div><div class="dp-row"><span class="lbl">Verlichting</span><span class="val">${item.relief_year?'Tot '+item.relief_year:'Langdurig'}</span></div><div class="dp-bar"><div class="dp-bar-lbl">Congestie ernst</div><div class="dp-bar-bg"><div class="dp-bar-fill" style="width:${(item.congestion_score||0)*10}%;background:${col}"></div></div></div><div class="dp-bar"><div class="dp-bar-lbl">BESS opportunity (incl. wind/zon)</div><div class="dp-bar-bg"><div class="dp-bar-fill" style="width:${boostedScore*10}%;background:#e67e22"></div></div></div><div class="dp-notes">${item.notes}</div>${connectedSection}`;
+  }
 }
 
-// Layer toggles
+// Controls
 document.getElementById('tog-prov').addEventListener('change',function(){if(provLayer){this.checked?map.addLayer(provLayer):map.removeLayer(provLayer);}});
 document.getElementById('tog-ring').addEventListener('change',function(){this.checked?map.addLayer(ringGroup):map.removeLayer(ringGroup);});
-
-// KV filters
 document.querySelectorAll('.fbtn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const kv=btn.dataset.kv;
     if(activeKV.has(kv)){activeKV.delete(kv);btn.classList.remove('active');}
     else{activeKV.add(kv);btn.classList.add('active');}
-    buildStations();
-    buildRanking();
-    updateStats();
+    buildMap(); buildRanking(); updateStats();
   });
 });
-
-// Search
-document.getElementById('search-box').addEventListener('input',e=>{
-  searchText=e.target.value.toLowerCase();
-  buildRanking();
-});
-
-// Auto-select top station
-setTimeout(()=>selectStation('maasvlakte'),600);
+document.getElementById('search-box').addEventListener('input',e=>{searchText=e.target.value.toLowerCase();buildRanking();});
+setTimeout(()=>selectItem('maasvlakte','station'),600);
 </script>
 </body>
 </html>
